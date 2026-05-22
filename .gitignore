@@ -1,3 +1,15 @@
 __pycache__/
-checkpoints/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
 .gradio/
+outputs/
+evaluation_results/
+data/
+
+checkpoints/
+OmniTry_Bench/
+
+.env
+.DS_Store
