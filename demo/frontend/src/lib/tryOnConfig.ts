@@ -1,0 +1,35 @@
+import type { TryOnCategory, TryOnMode } from "@/types/tryOn";
+
+export const MAX_PROMPT_LENGTH = 300;
+export const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+export const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+
+export const MODE_CONFIG: Record<TryOnMode, { label: string; description: string; candidates: number }> = {
+  fast: {
+    label: "Fast",
+    description: "K = 1 candidate",
+    candidates: 1,
+  },
+  balanced: {
+    label: "Balanced",
+    description: "K = 3 candidates",
+    candidates: 3,
+  },
+  high_quality: {
+    label: "High quality",
+    description: "K = 5 candidates",
+    candidates: 5,
+  },
+};
+
+export const CATEGORY_OPTIONS: { value: TryOnCategory; label: string }[] = [
+  { value: "auto", label: "Auto infer" },
+  { value: "garment", label: "Garment" },
+  { value: "shoes", label: "Shoes" },
+  { value: "jewelry", label: "Jewelry" },
+  { value: "bag", label: "Bag" },
+  { value: "watch", label: "Watch" },
+  { value: "glasses", label: "Glasses" },
+  { value: "hat", label: "Hat" },
+  { value: "holdable", label: "Holdable item" },
+];
