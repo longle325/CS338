@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import argparse
+import os
 from pathlib import Path
 
-from huggingface_hub import snapshot_download
+from huggingface_hub import get_token, snapshot_download
 
 
 def parse_args():
@@ -10,6 +11,7 @@ def parse_args():
     parser.add_argument("--repo-id", default="Kunbyte/OmniTry-Bench")
     parser.add_argument("--output-dir", default="data/OmniTry_Bench")
     parser.add_argument("--full", action="store_true", help="Download images as well as JSON metadata.")
+    parser.add_argument("--max-workers", type=int, default=4, help="Parallel Hugging Face download workers.")
     return parser.parse_args()
 
 
@@ -23,12 +25,18 @@ def main():
     if allow_patterns:
         print("Mode: metadata-only. Use --full for images.")
 
+    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or get_token()
+    if token:
+        print("Using Hugging Face authentication from environment/cache.")
+
     snapshot_download(
         repo_id=args.repo_id,
         repo_type="dataset",
         local_dir=str(output_dir),
         allow_patterns=allow_patterns,
         resume_download=True,
+        token=token,
+        max_workers=args.max_workers,
     )
     print("OmniTry-Bench download step complete.")
 

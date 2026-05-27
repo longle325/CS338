@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 
-from huggingface_hub import hf_hub_download, snapshot_download
+from huggingface_hub import get_token, hf_hub_download, snapshot_download
 from huggingface_hub.errors import GatedRepoError, HfHubHTTPError
 
 
@@ -13,7 +13,7 @@ LORA_FILENAME = "omnitry_v1_unified.safetensors"
 
 
 def _token():
-    return os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    return os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or get_token()
 
 
 def _download_flux(model_root: Path, token: str | None):
@@ -62,7 +62,8 @@ def main():
     except GatedRepoError as exc:
         print(
             f"Access denied for a gated Hugging Face repo: {exc}\n\n"
-            "Make sure your Hugging Face account accepted the FLUX.1-Fill-dev license and HF_TOKEN is exported.",
+            "Make sure your Hugging Face account accepted the FLUX.1-Fill-dev license and that "
+            "HF_TOKEN is exported or `huggingface-cli login` is configured.",
             file=sys.stderr,
         )
         return 2

@@ -3,18 +3,21 @@ import torch
 import random
 import torchvision.transforms as T
 import math
-import peft
+import numpy as np
 from pathlib import Path
 from typing import List
 from PIL import Image
-from peft import LoraConfig
-from safetensors import safe_open
 from omegaconf import OmegaConf
 import os
 os.environ.setdefault("GRADIO_TEMP_DIR", ".gradio")
 
 from omnitry.models.transformer_flux import FluxTransformer2DModel
 from omnitry.pipelines.pipeline_flux_fill import FluxFillPipeline
+from omnitry.enhance.flux_lora import (
+    add_omnitry_lora_adapters,
+    load_lora_safetensors,
+    patch_dual_stream_lora,
+)
 from omnitry.enhance import (
     CandidateResult,
     build_enhanced_prompt,
@@ -31,6 +34,13 @@ def _env_int(name, default):
         return default
 
 
+def _env_bool(name, default):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() not in {"0", "false", "no", "off"}
+
+
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 weight_dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
 args = OmegaConf.load('configs/omnitry_v1_unified.yaml')
@@ -40,29 +50,6 @@ MAX_CANDIDATES = max(1, _env_int("OMNITRY_MAX_CANDIDATES", 4))
 SEED_STRIDE = 9973
 transformer = None
 pipeline = None
-
-
-def create_hacked_forward(module):
-
-    def lora_forward(self, active_adapter, x, *args, **kwargs):
-        result = self.base_layer(x, *args, **kwargs)
-        if active_adapter is not None:
-            torch_result_dtype = result.dtype
-            lora_A = self.lora_A[active_adapter]
-            lora_B = self.lora_B[active_adapter]
-            dropout = self.lora_dropout[active_adapter]
-            scaling = self.scaling[active_adapter]
-            x = x.to(lora_A.weight.dtype)
-            result = result + lora_B(lora_A(dropout(x))) * scaling
-        return result
-    
-    def hacked_lora_forward(self, x, *args, **kwargs):
-        return torch.cat((
-            lora_forward(self, 'vtryon_lora', x[:1], *args, **kwargs),
-            lora_forward(self, 'garment_lora', x[1:], *args, **kwargs),
-        ), dim=0)
-    
-    return hacked_lora_forward.__get__(module, type(module))
 
 
 def validate_checkpoint_paths():
@@ -98,40 +85,23 @@ def load_pipeline():
     transformer = FluxTransformer2DModel.from_pretrained(f'{args.model_root}/transformer').requires_grad_(False).to(dtype=weight_dtype)
     pipeline = FluxFillPipeline.from_pretrained(args.model_root, transformer=transformer.eval(), torch_dtype=weight_dtype)
 
-    # VRAM saving, comment the following lines if you have sufficient memory.
-    if torch.cuda.is_available():
+    add_omnitry_lora_adapters(transformer, rank=args.lora_rank, alpha=args.lora_alpha)
+    load_lora_safetensors(transformer, args.lora_path)
+    patch_dual_stream_lora(transformer)
+
+    # Keep CPU offload by default for compatibility. Set OMNITRY_CPU_OFFLOAD=0
+    # when running on large-memory GPUs and you want the full pipeline resident.
+    if torch.cuda.is_available() and _env_bool("OMNITRY_CPU_OFFLOAD", True):
         pipeline.enable_model_cpu_offload()
     else:
         pipeline.to(device)
     pipeline.vae.enable_tiling()
 
-    lora_config = LoraConfig(
-        r=args.lora_rank,
-        lora_alpha=args.lora_alpha,
-        init_lora_weights="gaussian",
-        target_modules=[
-            'x_embedder',
-            'attn.to_k', 'attn.to_q', 'attn.to_v', 'attn.to_out.0',
-            'attn.add_k_proj', 'attn.add_q_proj', 'attn.add_v_proj', 'attn.to_add_out',
-            'ff.net.0.proj', 'ff.net.2', 'ff_context.net.0.proj', 'ff_context.net.2',
-            'norm1_context.linear', 'norm1.linear', 'norm.linear', 'proj_mlp', 'proj_out'
-        ]
-    )
-    transformer.add_adapter(lora_config, adapter_name='vtryon_lora')
-    transformer.add_adapter(lora_config, adapter_name='garment_lora')
-
-    with safe_open(args.lora_path, framework="pt") as f:
-        lora_weights = {k: f.get_tensor(k) for k in f.keys()}
-        transformer.load_state_dict(lora_weights, strict=False)
-
-    for _, module in transformer.named_modules():
-        if isinstance(module, peft.tuners.lora.layer.Linear):
-            module.forward = create_hacked_forward(module)
-
     return pipeline
 
 
 def seed_everything(seed=0):
+    seed = int(seed) % (2**32)
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
@@ -214,6 +184,7 @@ def prepare_condition_tensors(person_image, object_image):
 
 
 def _run_candidate(person_tensor, object_image_padded, prompt, steps, guidance_scale, seed, tW, tH):
+    seed = int(seed) % (2**32)
     seed_everything(seed)
     pipe = load_pipeline()
     prompts = [prompt] * 2
@@ -282,7 +253,11 @@ def generate(
     person_image, object_image, person_tensor, object_image_padded, tW, tH = prepare_condition_tensors(person_image, object_image)
     candidates: List[CandidateResult] = []
 
-    for candidate_seed in progress.tqdm(_candidate_seeds(seed, effective_candidate_count), desc='Generating candidates'):
+    candidate_seeds = _candidate_seeds(seed, effective_candidate_count)
+    if progress is not None and hasattr(progress, 'tqdm'):
+        candidate_seeds = progress.tqdm(candidate_seeds, desc='Generating candidates')
+
+    for candidate_seed in candidate_seeds:
         image = _run_candidate(person_tensor, object_image_padded, prompt, steps, guidance_scale, candidate_seed, tW, tH)
         total, object_score, person_score, artifact_score = score_candidate(image, person_image, object_image, object_class)
         candidates.append(CandidateResult(image, candidate_seed, total, object_score, person_score, artifact_score))

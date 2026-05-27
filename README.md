@@ -134,6 +134,18 @@ python scripts/crawl_hard_cases.py \
   --output data/hard_cases/commons_hard_cases.json
 ```
 
+Label crawled candidates with a paid vision LLM only through the cost guard:
+
+```bash
+python scripts/label_crawled_images.py \
+  --input data/hard_cases/commons_hard_cases.json \
+  --output data/hard_cases/commons_llm_labels.json \
+  --dry-run
+```
+
+The labeler reads `OPENAI_API_KEY` from `.env` or the environment and blocks before a request if the next estimated call would
+reach `LLM_LABEL_SOFT_BUDGET_USD` or `LLM_LABEL_BUDGET_USD`. See `.env.example` for the default `$100` cap and price assumptions.
+
 Train the planner:
 
 ```bash
@@ -150,15 +162,50 @@ Evaluate the planner:
 python scripts/eval_affordance_planner.py \
   --manifest data/hard_cases/omnitry_hard_cases.json \
   --checkpoint checkpoints/enhance/affordance_planner.pt \
-  --output outputs/enhance/planner_eval.json
+    --output outputs/enhance/planner_eval.json
+```
+
+Fine-tune the FLUX LoRA pilot trainer on paired target data:
+
+```bash
+python scripts/build_paired_manifest.py \
+  --index data/OmniTry_Bench/omni_vtryon_bench_v1.json \
+  --top-k 300 \
+  --per-class 40 \
+  --output data/hard_cases/omnitry_pseudo_paired_train.json
+
+CUDA_VISIBLE_DEVICES=2,3,7 accelerate launch --num_processes 3 scripts/train_geo_lora.py \
+  --manifest data/hard_cases/omnitry_pseudo_paired_train.json \
+  --output checkpoints/enhance/omnitry_geo_lora.safetensors \
+  --resolution 512 \
+  --max-train-steps 1000 \
+  --train-batch-size 1 \
+  --gradient-accumulation-steps 4
+```
+
+Each paired manifest item must include `person_path`, `object_path`, and `target_path` or `gt_path`. OmniTry-Bench is
+an evaluation benchmark and does not include supervised target images; `--allow-person-target` is only a reconstruction
+smoke-test fallback. `scripts/build_paired_manifest.py` creates pseudo-paired self-reconstruction data from person masks
+for pilot runs.
+
+Run a lightweight generation benchmark:
+
+```bash
+CUDA_VISIBLE_DEVICES=2 python scripts/run_tryon_benchmark.py \
+  --manifest data/hard_cases/omnitry_full_local_hard_cases.json \
+  --output-dir outputs/tryon_benchmark/enhanced \
+  --summary-output outputs/tryon_benchmark/enhanced_summary.json \
+  --mode Enhanced \
+  --max-items 32
 ```
 
 Expected training time:
 
 - smoke CPU run: less than a minute,
 - planner on 300-1,000 items: roughly 10-60 minutes on a 48 GB GPU,
+- FLUX LoRA pilot: 12-36 hours on one 48-80 GB GPU, multi-GPU recommended,
 - planner with real pseudo-label generation: hours, depending on GroundingDINO/SAM/pose/depth throughput,
-- FLUX LoRA/GeometryAdapter training is not included yet and is the next phase after planner + benchmark harness.
+- full GeometryAdapter training is still a future research phase after the LoRA pilot and benchmark harness.
 
 How to know it is better:
 

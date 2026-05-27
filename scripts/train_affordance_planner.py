@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import os
 import random
 import sys
 from pathlib import Path
@@ -64,8 +65,14 @@ def parse_args():
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--max-items", type=int, default=None)
+    parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "--data-parallel",
+        action="store_true",
+        help="Use torch.nn.DataParallel across all visible CUDA devices.",
+    )
     return parser.parse_args()
 
 
@@ -85,13 +92,35 @@ def dice_from_logits(logits, target, threshold=0.5):
     return torch.where(denom > 0, 2 * inter / denom, torch.ones_like(denom)).mean()
 
 
+def is_cuda_device(device):
+    return str(device).startswith("cuda")
+
+
 def main():
     args = parse_args()
     set_seed(args.seed)
 
     dataset = PlannerDataset(args.manifest, image_size=args.image_size, max_items=args.max_items)
-    loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0)
+    use_cuda = is_cuda_device(args.device) and torch.cuda.is_available()
+    loader = DataLoader(
+        dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        pin_memory=use_cuda,
+    )
     model = AffordancePlanner(num_classes=len(dataset.class_to_idx)).to(args.device)
+    data_parallel = bool(args.data_parallel and use_cuda and torch.cuda.device_count() > 1)
+    if data_parallel:
+        print(
+            "Using DataParallel on "
+            f"{torch.cuda.device_count()} visible CUDA devices "
+            f"(CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES', 'all')})"
+        )
+        model = torch.nn.DataParallel(model)
+    elif args.data_parallel:
+        print("DataParallel requested, but fewer than two CUDA devices are visible.")
+
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
 
     history = []
@@ -100,9 +129,9 @@ def main():
         losses = []
         dices = []
         for batch in loader:
-            image = batch["image"].to(args.device)
-            target = batch["target"].to(args.device)
-            class_id = batch["class_id"].to(args.device)
+            image = batch["image"].to(args.device, non_blocking=use_cuda)
+            target = batch["target"].to(args.device, non_blocking=use_cuda)
+            class_id = batch["class_id"].to(args.device, non_blocking=use_cuda)
             logits = model(image, class_id)
             bce = F.binary_cross_entropy_with_logits(logits, target)
             pred = torch.sigmoid(logits)
@@ -128,15 +157,19 @@ def main():
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
+    model_to_save = model.module if isinstance(model, torch.nn.DataParallel) else model
     save_planner(
         output,
-        model.cpu(),
+        model_to_save.cpu(),
         dataset.class_to_idx,
         {
             "image_size": args.image_size,
             "manifest": args.manifest,
             "epochs": args.epochs,
             "items": len(dataset),
+            "batch_size": args.batch_size,
+            "data_parallel": data_parallel,
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
             "history": history,
         },
     )
