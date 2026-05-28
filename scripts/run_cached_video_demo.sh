@@ -26,7 +26,7 @@ fi
 LOCAL_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 echo "[cached-demo] GPU-free cached demo mode"
 echo "[cached-demo] Delay: ${CACHE_DELAY_MS} ms"
-echo "[cached-demo] Upload inputs from: ${ROOT_DIR}/outputs/video_demo_cache_inputs"
+echo "[cached-demo] Upload inputs from: ${ROOT_DIR}/demo/frontend/public/demo-cache-inputs"
 echo "[cached-demo] Frontend: http://127.0.0.1:${FRONTEND_PORT}/"
 if [[ -n "${LOCAL_IP}" ]]; then
   echo "[cached-demo] Network:  http://${LOCAL_IP}:${FRONTEND_PORT}/"
