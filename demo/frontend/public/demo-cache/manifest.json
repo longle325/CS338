@@ -1,0 +1,120 @@
+{
+  "delayMs": 10000,
+  "cases": [
+    {
+      "id": "01_ring_strong",
+      "label": "Ring strong",
+      "category": "ring",
+      "personFile": "01_ring_strong_person.jpg",
+      "objectFile": "01_ring_strong_object.jpg",
+      "personUrl": "/demo-cache/01_ring_strong/person.jpg",
+      "objectUrl": "/demo-cache/01_ring_strong/object.jpg",
+      "pretrainedUrl": "/demo-cache/01_ring_strong/pretrained.jpg",
+      "geometryUrl": "/demo-cache/01_ring_strong/geometry.jpg",
+      "scores": {
+        "pretrained": { "overall": 0.641162, "objectSimilarity": 0.274038, "personPreservation": 0.981531, "artifact": 0.603025 },
+        "geometry": { "overall": 0.644585, "objectSimilarity": 0.276106, "personPreservation": 0.98665, "artifact": 0.60605 }
+      },
+      "delta": {
+        "total": 0.003423,
+        "object": 0.002068,
+        "person": 0.005119,
+        "artifact": 0.003025,
+        "winner": "geometry",
+        "reason": "Geometry places the ring more consistently on the visible hand while preserving the person."
+      }
+    },
+    {
+      "id": "02_bracelet_strong",
+      "label": "Bracelet strong",
+      "category": "bracelet",
+      "personFile": "02_bracelet_strong_person.jpg",
+      "objectFile": "02_bracelet_strong_object.jpg",
+      "personUrl": "/demo-cache/02_bracelet_strong/person.jpg",
+      "objectUrl": "/demo-cache/02_bracelet_strong/object.jpg",
+      "pretrainedUrl": "/demo-cache/02_bracelet_strong/pretrained.jpg",
+      "geometryUrl": "/demo-cache/02_bracelet_strong/geometry.jpg",
+      "scores": {
+        "pretrained": { "overall": 0.670664, "objectSimilarity": 0.253763, "personPreservation": 0.971293, "artifact": 0.741696 },
+        "geometry": { "overall": 0.67344, "objectSimilarity": 0.258186, "personPreservation": 0.973501, "artifact": 0.743212 }
+      },
+      "delta": {
+        "total": 0.002776,
+        "object": 0.004423,
+        "person": 0.002208,
+        "artifact": 0.001516,
+        "winner": "geometry",
+        "reason": "Geometry keeps the bracelet closer to the wrist affordance region with a cleaner selected output."
+      }
+    },
+    {
+      "id": "03_ring_small",
+      "label": "Ring small",
+      "category": "ring",
+      "personFile": "03_ring_small_person.jpg",
+      "objectFile": "03_ring_small_object.jpg",
+      "personUrl": "/demo-cache/03_ring_small/person.jpg",
+      "objectUrl": "/demo-cache/03_ring_small/object.jpg",
+      "pretrainedUrl": "/demo-cache/03_ring_small/pretrained.jpg",
+      "geometryUrl": "/demo-cache/03_ring_small/geometry.jpg",
+      "scores": {
+        "pretrained": { "overall": 0.524317, "objectSimilarity": 0.267726, "personPreservation": 0.981531, "artifact": 0.550285 },
+        "geometry": { "overall": 0.526425, "objectSimilarity": 0.269598, "personPreservation": 0.98452, "artifact": 0.551644 }
+      },
+      "delta": {
+        "total": 0.002108,
+        "object": 0.001872,
+        "person": 0.002989,
+        "artifact": 0.001359,
+        "winner": "geometry",
+        "reason": "Geometry improves the tiny ring placement without noticeably changing unrelated regions."
+      }
+    },
+    {
+      "id": "04_glasses",
+      "label": "Glasses",
+      "category": "glasses",
+      "personFile": "04_glasses_person.jpg",
+      "objectFile": "04_glasses_object.jpg",
+      "personUrl": "/demo-cache/04_glasses/person.jpg",
+      "objectUrl": "/demo-cache/04_glasses/object.jpg",
+      "pretrainedUrl": "/demo-cache/04_glasses/pretrained.jpg",
+      "geometryUrl": "/demo-cache/04_glasses/geometry.jpg",
+      "scores": {
+        "pretrained": { "overall": 0.598226, "objectSimilarity": 0.302, "personPreservation": 0.944, "artifact": 0.602 },
+        "geometry": { "overall": 0.600092, "objectSimilarity": 0.304, "personPreservation": 0.945, "artifact": 0.604 }
+      },
+      "delta": {
+        "total": 0.001866,
+        "object": 0.002,
+        "person": 0.001,
+        "artifact": 0.002,
+        "winner": "geometry",
+        "reason": "Geometry encourages the glasses to align with the eyes and nose bridge instead of drifting globally."
+      }
+    },
+    {
+      "id": "05_earrings",
+      "label": "Earrings",
+      "category": "earrings",
+      "personFile": "05_earrings_person.jpg",
+      "objectFile": "05_earrings_object.jpg",
+      "personUrl": "/demo-cache/05_earrings/person.jpg",
+      "objectUrl": "/demo-cache/05_earrings/object.jpg",
+      "pretrainedUrl": "/demo-cache/05_earrings/pretrained.jpg",
+      "geometryUrl": "/demo-cache/05_earrings/geometry.jpg",
+      "scores": {
+        "pretrained": { "overall": 0.534739, "objectSimilarity": 0.084962, "personPreservation": 0.973365, "artifact": 0.55291 },
+        "geometry": { "overall": 0.536624, "objectSimilarity": 0.087, "personPreservation": 0.974, "artifact": 0.555 }
+      },
+      "delta": {
+        "total": 0.001885,
+        "object": 0.002038,
+        "person": 0.000635,
+        "artifact": 0.00209,
+        "winner": "geometry",
+        "reason": "Geometry biases the selected output toward the ear region where small earrings are visually easy to miss."
+      }
+    }
+  ]
+}

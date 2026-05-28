@@ -23,25 +23,8 @@ const Index = () => {
                 <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
                   OmniTry++ Virtual Try-On
                 </h1>
-                <Badge variant="secondary" className="rounded-md bg-emerald-50 text-emerald-700">
-                  Mask-free
-                </Badge>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Person Image + Item Image + Optional Prompt to K Candidates to QA Reranking to Best Result
-              </p>
             </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="rounded-md border-primary/20 bg-primary/5 text-primary">
-              <Cpu className="mr-1 h-3.5 w-3.5" />
-              API-ready
-            </Badge>
-            <Badge variant="outline" className="rounded-md border-emerald-200 bg-emerald-50 text-emerald-700">
-              <Sparkles className="mr-1 h-3.5 w-3.5" />
-              Demo pipeline
-            </Badge>
           </div>
         </div>
       </header>
@@ -124,7 +107,6 @@ const Index = () => {
               numCandidates={demo.numCandidates}
               isGenerating={demo.isGenerating}
               selectedCandidate={demo.selectedCandidate}
-              selectedCandidateId={demo.selectedCandidateId}
               candidates={demo.candidates}
               confidence={demo.confidence}
               warnings={demo.warnings}
@@ -134,7 +116,6 @@ const Index = () => {
               canGenerate={demo.canGenerate}
               onGenerate={demo.generate}
               onDownload={demo.downloadSelectedResult}
-              onSelectCandidate={demo.setSelectedCandidateId}
             />
           </div>
         </div>

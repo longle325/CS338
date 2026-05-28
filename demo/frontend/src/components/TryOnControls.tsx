@@ -124,7 +124,7 @@ export const TryOnControls = ({
                 id="candidate-count"
                 type="number"
                 min={1}
-                max={5}
+                max={1}
                 value={numCandidates}
                 onChange={(event) => onNumCandidatesChange(Number(event.target.value))}
                 className="rounded-lg bg-card"

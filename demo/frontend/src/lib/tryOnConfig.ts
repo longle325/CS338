@@ -7,18 +7,18 @@ export const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "im
 export const MODE_CONFIG: Record<TryOnMode, { label: string; description: string; candidates: number }> = {
   fast: {
     label: "Fast",
-    description: "K = 1 candidate",
+    description: "6 steps, K = 1",
     candidates: 1,
   },
   balanced: {
     label: "Balanced",
-    description: "K = 3 candidates",
-    candidates: 3,
+    description: "10 steps, K = 1",
+    candidates: 1,
   },
   high_quality: {
     label: "High quality",
-    description: "K = 5 candidates",
-    candidates: 5,
+    description: "16 steps, K = 1",
+    candidates: 1,
   },
 };
 

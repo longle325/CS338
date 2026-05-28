@@ -17,6 +17,8 @@ type ApiRecord = Record<string, unknown>;
 const API_BASE_URL = (import.meta.env.VITE_TRYON_API_BASE_URL as string | undefined)?.replace(/\/+$/, "") || "";
 const TRYON_API_URL = import.meta.env.VITE_TRYON_API_URL as string | undefined;
 const USE_MOCK = String(import.meta.env.VITE_TRYON_USE_MOCK || "").toLowerCase() === "true";
+const USE_CACHE = String(import.meta.env.VITE_TRYON_USE_CACHE || "").toLowerCase() === "true";
+const CACHE_DELAY_MS = Number(import.meta.env.VITE_TRYON_CACHE_DELAY_MS || 10000);
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -82,9 +84,9 @@ const CLASS_KEYWORDS: Array<[string, string]> = [
 ];
 
 const STEPS_BY_MODE: Record<TryOnMode, number> = {
-  fast: 12,
-  balanced: 20,
-  high_quality: 30,
+  fast: 6,
+  balanced: 10,
+  high_quality: 16,
 };
 
 const isRecord = (value: unknown): value is ApiRecord =>
@@ -113,6 +115,28 @@ const normalizeUnitScore = (value: unknown): number | undefined => {
 };
 
 const hasKeys = (record: ApiRecord) => Object.keys(record).length > 0;
+
+interface CachedDemoCase {
+  id: string;
+  label: string;
+  category: string;
+  personFile: string;
+  objectFile: string;
+  personUrl: string;
+  objectUrl: string;
+  pretrainedUrl: string;
+  geometryUrl: string;
+  scores: {
+    pretrained: TryOnCandidateScores;
+    geometry: TryOnCandidateScores;
+  };
+  delta: TryOnComparisonDelta;
+}
+
+interface CachedDemoManifest {
+  delayMs?: number;
+  cases: CachedDemoCase[];
+}
 
 const abortError = () => {
   const error = new Error("Generation was canceled.");
@@ -350,6 +374,126 @@ const buildWarnings = (delta?: TryOnComparisonDelta): TryOnWarning[] => {
   ];
 };
 
+let cachedManifestPromise: Promise<CachedDemoManifest> | null = null;
+
+const loadCachedDemoManifest = async () => {
+  if (!cachedManifestPromise) {
+    cachedManifestPromise = fetch("/demo-cache/manifest.json").then(async (response) => {
+      if (!response.ok) throw new Error("Could not load cached demo manifest.");
+      return response.json();
+    });
+  }
+  return cachedManifestPromise;
+};
+
+const normalizeFilename = (name: string) => name.trim().toLowerCase();
+
+const findCachedCase = (manifest: CachedDemoManifest, request: TryOnRequest) => {
+  const personName = normalizeFilename(request.personFile.name);
+  const objectName = normalizeFilename(request.itemFile.name);
+  const requestedClass = normalizeCategory(request.category);
+
+  const exact = manifest.cases.find(
+    (item) =>
+      personName === normalizeFilename(item.personFile) ||
+      objectName === normalizeFilename(item.objectFile) ||
+      personName.includes(item.id) ||
+      objectName.includes(item.id),
+  );
+  if (exact) return exact;
+
+  if (requestedClass) {
+    return manifest.cases.find((item) => item.category === requestedClass);
+  }
+
+  return undefined;
+};
+
+const scoreFromCached = (scores: TryOnCandidateScores) => normalizeUnitScore(scores.overall);
+
+const cachedCandidate = (
+  item: CachedDemoCase,
+  branchName: "pretrained" | "geometry",
+  index: number,
+): TryOnCandidate => {
+  const scores = item.scores[branchName];
+  const isGeometry = branchName === "geometry";
+
+  return {
+    id: isGeometry ? "geometry_best" : "pretrained_output",
+    label: isGeometry ? "Pretrained + Geometry" : "Pretrained",
+    branch: branchName,
+    imageUrl: isGeometry ? item.geometryUrl : item.pretrainedUrl,
+    score: scoreFromCached(scores),
+    confidence: scoreFromCached(scores),
+    scores,
+    isBest: isGeometry,
+    candidateIndex: index,
+    rank: 1,
+  };
+};
+
+const generateCachedTryOn = async (
+  request: TryOnRequest,
+  signal?: AbortSignal,
+): Promise<NormalizedTryOnResponse> => {
+  const manifest = await loadCachedDemoManifest();
+  const item = findCachedCase(manifest, request);
+  if (!item) {
+    throw new Error("Cached demo case not found. Use files from outputs/video_demo_cache_inputs.");
+  }
+
+  const delayMs = Number.isFinite(CACHE_DELAY_MS) ? CACHE_DELAY_MS : manifest.delayMs || 10000;
+  await sleep(Math.max(0, delayMs), signal);
+
+  const pretrained = cachedCandidate(item, "pretrained", 0);
+  const geometry = cachedCandidate(item, "geometry", 1);
+
+  return {
+    result: {
+      imageUrl: geometry.imageUrl,
+      confidence: geometry.confidence,
+      candidateId: geometry.id,
+      candidateIndex: geometry.candidateIndex,
+    },
+    candidates: [pretrained, geometry],
+    metadata: {
+      jobId: `cached_${item.id}_${Date.now()}`,
+      responseId: item.id,
+      generationTimeMs: delayMs,
+      mode: request.mode,
+      numCandidates: 1,
+      objectClass: item.category,
+      source: "api",
+    },
+    comparison: {
+      personImageUrl: item.personUrl,
+      itemImageUrl: item.objectUrl,
+      objectClass: item.category,
+      pretrained: {
+        label: "Pretrained",
+        branch: "pretrained",
+        imageUrl: item.pretrainedUrl,
+        score: pretrained.score,
+        scores: item.scores.pretrained,
+        confidenceLabel: "medium",
+        candidateCount: 1,
+      },
+      geometry: {
+        label: "Pretrained + Geometry",
+        branch: "geometry",
+        imageUrl: item.geometryUrl,
+        score: geometry.score,
+        scores: item.scores.geometry,
+        confidenceLabel: "high",
+        candidateCount: 1,
+      },
+      delta: item.delta,
+    },
+    warnings: [],
+  };
+};
+
 const adaptBackendResult = (
   rawResult: unknown,
   status: ApiRecord,
@@ -362,32 +506,44 @@ const adaptBackendResult = (
   const inputs = asRecord(result.inputs);
   const delta = normalizeDelta(result.delta);
 
-  const candidates: TryOnCandidate[] = [];
-  const pretrainedCandidate = outputCandidateFromBranch(pretrained, "pretrained", candidates.length, backendOrigin);
-  if (pretrainedCandidate) candidates.push(pretrainedCandidate);
-
   const geometryCandidates = asArray(geometry.candidates)
-    .map((candidate, index) => candidateFromBackend(candidate, candidates.length + index, "geometry", backendOrigin))
+    .map((candidate, index) => candidateFromBackend(candidate, index, "geometry", backendOrigin))
     .filter(Boolean) as TryOnCandidate[];
 
-  if (geometryCandidates.length > 0) {
-    candidates.push(...geometryCandidates);
-  } else {
-    const geometryCandidate = outputCandidateFromBranch(geometry, "geometry", candidates.length, backendOrigin);
-    if (geometryCandidate) candidates.push(geometryCandidate);
+  const pretrainedCandidate = outputCandidateFromBranch(pretrained, "pretrained", 0, backendOrigin);
+  const bestGeometryCandidate =
+    geometryCandidates.find((candidate) => candidate.isBest) ||
+    geometryCandidates[0] ||
+    outputCandidateFromBranch(geometry, "geometry", 1, backendOrigin);
+
+  const candidates: TryOnCandidate[] = [];
+  if (pretrainedCandidate) {
+    candidates.push({
+      ...pretrainedCandidate,
+      id: "pretrained_output",
+      label: "Pretrained",
+      candidateIndex: 0,
+      isBest: false,
+    });
+  }
+  if (bestGeometryCandidate) {
+    candidates.push({
+      ...bestGeometryCandidate,
+      id: "geometry_best",
+      label: "Pretrained + Geometry",
+      candidateIndex: 1,
+      isBest: true,
+    });
   }
 
-  const selectedGeometry =
-    candidates.find((candidate) => candidate.branch === "geometry" && candidate.isBest) ||
-    candidates.find((candidate) => candidate.branch === "geometry");
-  const selectedCandidate = selectedGeometry || pretrainedCandidate || candidates[0];
+  const selectedCandidate = candidates.find((candidate) => candidate.id === "geometry_best") || candidates[0];
 
   if (!selectedCandidate) {
     throw new Error("Backend result did not include a generated image.");
   }
 
   candidates.forEach((candidate) => {
-    candidate.isBest = candidate.id === selectedCandidate.id;
+    candidate.isBest = candidate.id === "geometry_best";
   });
 
   const comparison: TryOnComparison = {
@@ -497,35 +653,55 @@ const mockScores = (index: number) => {
   };
 };
 
-const buildMockCandidates = (count: number): TryOnCandidate[] =>
-  Array.from({ length: count + 1 }, (_, index) => {
-    const isPretrained = index === 0;
-    const scores = mockScores(index);
-    return {
-      id: isPretrained ? "pretrained_mock" : `geometry_mock_${index}`,
-      label: isPretrained ? "Pretrained baseline" : `Geometry candidate ${index}`,
-      branch: isPretrained ? "pretrained" : "geometry",
+const buildMockCandidates = (): TryOnCandidate[] => {
+  const pretrainedScores = mockScores(2);
+  const geometryScores = mockScores(0);
+
+  return [
+    {
+      id: "pretrained_mock",
+      label: "Pretrained",
+      branch: "pretrained",
       imageUrl: mockResultImage,
-      score: scores.overall,
-      confidence: scores.overall,
+      score: pretrainedScores.overall,
+      confidence: pretrainedScores.overall,
       scores: {
-        objectSimilarity: scores.object_similarity,
-        personPreservation: scores.person_preservation,
-        localization: scores.localization,
-        artifact: scores.artifact,
-        overall: scores.overall,
+        objectSimilarity: pretrainedScores.object_similarity,
+        personPreservation: pretrainedScores.person_preservation,
+        localization: pretrainedScores.localization,
+        artifact: pretrainedScores.artifact,
+        overall: pretrainedScores.overall,
       },
-      isBest: index === 1 || (count === 0 && index === 0),
-      candidateIndex: index,
-      rank: index,
-    };
-  });
+      isBest: false,
+      candidateIndex: 0,
+      rank: 1,
+    },
+    {
+      id: "geometry_mock",
+      label: "Pretrained + Geometry",
+      branch: "geometry",
+      imageUrl: mockResultImage,
+      score: geometryScores.overall,
+      confidence: geometryScores.overall,
+      scores: {
+        objectSimilarity: geometryScores.object_similarity,
+        personPreservation: geometryScores.person_preservation,
+        localization: geometryScores.localization,
+        artifact: geometryScores.artifact,
+        overall: geometryScores.overall,
+      },
+      isBest: true,
+      candidateIndex: 1,
+      rank: 1,
+    },
+  ];
+};
 
 const generateMockTryOn = async (request: TryOnRequest, signal?: AbortSignal): Promise<NormalizedTryOnResponse> => {
   const candidateCount = Math.min(5, Math.max(1, request.numCandidates || 1));
   await sleep(1800 + candidateCount * 450, signal);
 
-  const candidates = buildMockCandidates(candidateCount);
+  const candidates = buildMockCandidates();
   const bestCandidate = candidates.find((candidate) => candidate.isBest) || candidates[0];
   const objectClass = normalizeCategory(request.category) || "ring";
   const warnings: TryOnWarning[] = request.prompt?.toLowerCase().includes("left")
@@ -593,6 +769,10 @@ export const generateTryOn = async (
 ): Promise<NormalizedTryOnResponse> => {
   if (USE_MOCK) {
     return generateMockTryOn(request, signal);
+  }
+
+  if (USE_CACHE) {
+    return generateCachedTryOn(request, signal);
   }
 
   return postToTryOnApi(request, signal);

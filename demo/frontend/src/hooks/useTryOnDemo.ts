@@ -22,7 +22,7 @@ import type {
   TryOnWarning,
 } from "@/types/tryOn";
 
-const DEFAULT_MODE: TryOnMode = "balanced";
+const DEFAULT_MODE: TryOnMode = "fast";
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
 const defaultSettings: AdvancedTryOnSettings = {
@@ -106,7 +106,7 @@ export const useTryOnDemo = () => {
   }, []);
 
   const setCandidateCount = useCallback((nextCount: number) => {
-    const boundedCount = Math.min(5, Math.max(1, Number.isFinite(nextCount) ? nextCount : 1));
+    const boundedCount = Math.min(1, Math.max(1, Number.isFinite(nextCount) ? nextCount : 1));
     setNumCandidates(boundedCount);
   }, []);
 
