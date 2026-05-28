@@ -36,6 +36,13 @@ export const CandidateGallery = ({ candidates, selectedCandidateId, onSelect }: 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
         {candidates.map((candidate) => {
           const isSelected = candidate.id === selectedCandidateId;
+          const title = candidate.label || `Candidate ${candidate.candidateIndex + 1}`;
+          const branchLabel =
+            candidate.branch === "pretrained"
+              ? "Pretrained"
+              : candidate.branch === "geometry"
+                ? "Geometry"
+                : candidate.branch;
 
           return (
             <button
@@ -50,10 +57,11 @@ export const CandidateGallery = ({ candidates, selectedCandidateId, onSelect }: 
               <div className="relative aspect-[3/4] bg-secondary/40">
                 <img
                   src={candidate.imageUrl}
-                  alt={`Try-on candidate ${candidate.candidateIndex + 1}`}
+                  alt={title}
                   className="h-full w-full object-cover"
                 />
                 <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+                  {branchLabel && <Badge variant="secondary" className="rounded-md bg-background/90">{branchLabel}</Badge>}
                   {candidate.isBest && <Badge className="rounded-md bg-emerald-600 text-white">Best</Badge>}
                   {isSelected && (
                     <Badge variant="secondary" className="rounded-md bg-background/90">
@@ -65,7 +73,7 @@ export const CandidateGallery = ({ candidates, selectedCandidateId, onSelect }: 
               </div>
               <div className="space-y-2 p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-foreground">Candidate {candidate.candidateIndex + 1}</span>
+                  <span className="min-w-0 truncate text-sm font-semibold text-foreground">{title}</span>
                   <span className="text-xs font-semibold text-primary">{percent(candidate.score)}</span>
                 </div>
                 {candidate.scores && (

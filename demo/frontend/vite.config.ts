@@ -11,6 +11,20 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      "/api": {
+        target: process.env.VITE_BACKEND_PROXY_TARGET || "http://127.0.0.1:8010",
+        changeOrigin: true,
+      },
+      "/artifacts": {
+        target: process.env.VITE_BACKEND_PROXY_TARGET || "http://127.0.0.1:8010",
+        changeOrigin: true,
+      },
+      "/demo-examples": {
+        target: process.env.VITE_BACKEND_PROXY_TARGET || "http://127.0.0.1:8010",
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

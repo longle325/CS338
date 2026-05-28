@@ -11,13 +11,25 @@ export interface PipelineStep {
 
 export type TryOnCategory =
   | "auto"
+  | "top clothes"
+  | "bottom clothes"
+  | "dress"
+  | "shoe"
+  | "earrings"
+  | "bracelet"
+  | "necklace"
+  | "ring"
+  | "sunglasses"
+  | "glasses"
+  | "belt"
+  | "bag"
+  | "hat"
+  | "tie"
+  | "bow tie"
   | "garment"
   | "shoes"
   | "jewelry"
-  | "bag"
   | "watch"
-  | "glasses"
-  | "hat"
   | "holdable";
 
 export interface AdvancedTryOnSettings {
@@ -50,12 +62,15 @@ export interface TryOnCandidateScores {
 
 export interface TryOnCandidate {
   id: string;
+  label?: string;
+  branch?: "pretrained" | "geometry" | string;
   imageUrl: string;
   score?: number;
   confidence?: number;
   scores?: TryOnCandidateScores;
   isBest?: boolean;
   candidateIndex: number;
+  rank?: number;
 }
 
 export interface TryOnResult {
@@ -77,12 +92,44 @@ export interface TryOnMetadata {
   generationTimeMs?: number;
   mode?: TryOnMode;
   numCandidates?: number;
+  objectClass?: string;
+  statusUrl?: string;
   source?: "api" | "mock";
+}
+
+export interface TryOnBranchSummary {
+  label: string;
+  branch: "pretrained" | "geometry" | string;
+  imageUrl?: string;
+  score?: number;
+  confidenceLabel?: string;
+  candidateCount?: number;
+  diagnosticsUrl?: string;
+  scores?: TryOnCandidateScores;
+}
+
+export interface TryOnComparisonDelta {
+  total?: number;
+  object?: number;
+  person?: number;
+  artifact?: number;
+  winner?: "pretrained" | "geometry" | "tie" | string;
+  reason?: string;
+}
+
+export interface TryOnComparison {
+  personImageUrl?: string;
+  itemImageUrl?: string;
+  objectClass?: string;
+  pretrained?: TryOnBranchSummary;
+  geometry?: TryOnBranchSummary;
+  delta?: TryOnComparisonDelta;
 }
 
 export interface NormalizedTryOnResponse {
   result: TryOnResult;
   candidates: TryOnCandidate[];
   metadata: TryOnMetadata;
+  comparison?: TryOnComparison;
   warnings: TryOnWarning[];
 }

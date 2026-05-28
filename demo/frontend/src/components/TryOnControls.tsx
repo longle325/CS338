@@ -90,7 +90,7 @@ export const TryOnControls = ({
 
       <div className="space-y-2">
         <Label htmlFor="item-category" className="text-sm font-semibold">
-          Optional item category
+          Item category
         </Label>
         <Select value={category} onValueChange={(value) => onCategoryChange(value as TryOnCategory)}>
           <SelectTrigger id="item-category" className="h-11 rounded-lg bg-card">
@@ -135,9 +135,9 @@ export const TryOnControls = ({
               <Input
                 id="guidance-scale"
                 type="number"
-                step={0.5}
+                step={1}
                 min={1}
-                max={20}
+                max={50}
                 value={settings.guidanceScale ?? ""}
                 onChange={(event) =>
                   onSettingsChange({

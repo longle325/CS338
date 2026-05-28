@@ -15,6 +15,7 @@ import type {
   PipelineStep,
   TryOnCandidate,
   TryOnCategory,
+  TryOnComparison,
   TryOnMetadata,
   TryOnMode,
   TryOnResult,
@@ -22,10 +23,10 @@ import type {
 } from "@/types/tryOn";
 
 const DEFAULT_MODE: TryOnMode = "balanced";
-const GENERATION_TIMEOUT_MS = 60000;
+const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
 const defaultSettings: AdvancedTryOnSettings = {
-  guidanceScale: 7.5,
+  guidanceScale: 30,
   seed: undefined,
   enableReranker: true,
   enableRefiner: true,
@@ -54,6 +55,7 @@ export const useTryOnDemo = () => {
   const [warnings, setWarnings] = useState<TryOnWarning[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<TryOnMetadata | null>(null);
+  const [comparison, setComparison] = useState<TryOnComparison | null>(null);
 
   const pipelineTimersRef = useRef<number[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -118,6 +120,7 @@ export const useTryOnDemo = () => {
     setSelectedCandidateId(null);
     setWarnings([]);
     setMetadata(null);
+    setComparison(null);
     setError(null);
     setPipelineSteps(createPipelineSteps());
   }, []);
@@ -147,6 +150,7 @@ export const useTryOnDemo = () => {
       setCandidates(response.candidates);
       setSelectedCandidateId(bestCandidate?.id || null);
       setWarnings(response.warnings);
+      setComparison(response.comparison || null);
       setMetadata({
         ...response.metadata,
         generationTimeMs: response.metadata.generationTimeMs ?? measuredGenerationTimeMs,
@@ -184,6 +188,7 @@ export const useTryOnDemo = () => {
     setCandidates([]);
     setSelectedCandidateId(null);
     setMetadata(null);
+    setComparison(null);
     startPipelineSimulation();
 
     const start = performance.now();
@@ -272,6 +277,7 @@ export const useTryOnDemo = () => {
     warnings,
     error,
     metadata,
+    comparison,
     canGenerate,
     hasResult,
     setPersonFile,

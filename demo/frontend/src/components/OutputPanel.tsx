@@ -4,7 +4,7 @@ import { ConfidencePanel } from "@/components/ConfidencePanel";
 import { DetailsPanel } from "@/components/DetailsPanel";
 import { ResultViewer } from "@/components/ResultViewer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { TryOnCandidate, TryOnMetadata, TryOnMode, TryOnWarning } from "@/types/tryOn";
+import type { TryOnCandidate, TryOnComparison, TryOnMetadata, TryOnMode, TryOnWarning } from "@/types/tryOn";
 
 interface OutputPanelProps {
   personFile: File | null;
@@ -22,6 +22,7 @@ interface OutputPanelProps {
   warnings: TryOnWarning[];
   error?: string | null;
   metadata: TryOnMetadata | null;
+  comparison: TryOnComparison | null;
   canGenerate: boolean;
   onGenerate: () => void;
   onDownload: () => void;
@@ -44,6 +45,7 @@ export const OutputPanel = ({
   warnings,
   error,
   metadata,
+  comparison,
   canGenerate,
   onGenerate,
   onDownload,
@@ -97,6 +99,7 @@ export const OutputPanel = ({
           personPreviewUrl={personPreviewUrl}
           itemPreviewUrl={itemPreviewUrl}
           resultImageUrl={selectedCandidate?.imageUrl}
+          comparison={comparison}
         />
       </TabsContent>
 
@@ -112,6 +115,7 @@ export const OutputPanel = ({
           mode={mode}
           numCandidates={numCandidates}
           metadata={metadata}
+          comparison={comparison}
           selectedCandidate={selectedCandidate}
           confidence={confidence}
           error={error}

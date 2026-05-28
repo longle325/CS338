@@ -1,6 +1,6 @@
 import { FileText } from "lucide-react";
 import { MODE_CONFIG } from "@/lib/tryOnConfig";
-import type { TryOnCandidate, TryOnMetadata, TryOnMode } from "@/types/tryOn";
+import type { TryOnCandidate, TryOnComparison, TryOnMetadata, TryOnMode } from "@/types/tryOn";
 
 const formatMs = (value?: number) => {
   if (value === undefined) return "--";
@@ -13,7 +13,7 @@ const formatConfidence = (value?: number) => (value === undefined ? "--" : `${Ma
 const DetailRow = ({ label, value }: { label: string; value?: string | number | null }) => (
   <div className="grid grid-cols-[minmax(120px,0.9fr)_minmax(0,1.1fr)] gap-3 border-b border-border py-2 last:border-b-0">
     <dt className="text-xs font-medium uppercase text-muted-foreground">{label}</dt>
-    <dd className="min-w-0 break-words text-sm text-foreground">{value || "--"}</dd>
+    <dd className="min-w-0 break-words text-sm text-foreground">{value ?? "--"}</dd>
   </div>
 );
 
@@ -24,6 +24,7 @@ interface DetailsPanelProps {
   mode: TryOnMode;
   numCandidates: number;
   metadata: TryOnMetadata | null;
+  comparison: TryOnComparison | null;
   selectedCandidate: TryOnCandidate | null;
   confidence?: number;
   error?: string | null;
@@ -36,6 +37,7 @@ export const DetailsPanel = ({
   mode,
   numCandidates,
   metadata,
+  comparison,
   selectedCandidate,
   confidence,
   error,
@@ -51,6 +53,7 @@ export const DetailsPanel = ({
       <DetailRow label="Item file" value={itemFile?.name} />
       <DetailRow label="Prompt" value={prompt.trim() || "No prompt"} />
       <DetailRow label="Mode" value={MODE_CONFIG[mode].label} />
+      <DetailRow label="Object class" value={metadata?.objectClass || comparison?.objectClass} />
       <DetailRow label="Candidates K" value={metadata?.numCandidates ?? numCandidates} />
       <DetailRow label="QA reranking" value="Automatic pipeline step" />
       <DetailRow
@@ -60,11 +63,14 @@ export const DetailsPanel = ({
       <DetailRow label="Generation time" value={formatMs(metadata?.generationTimeMs)} />
       <DetailRow
         label="Selected candidate"
-        value={selectedCandidate ? `Candidate ${selectedCandidate.candidateIndex + 1}` : "--"}
+        value={selectedCandidate ? selectedCandidate.label || `Candidate ${selectedCandidate.candidateIndex + 1}` : "--"}
       />
+      <DetailRow label="Comparison winner" value={comparison?.delta?.winner} />
+      <DetailRow label="Geometry delta" value={comparison?.delta?.total === undefined ? undefined : `${(comparison.delta.total * 100).toFixed(1)} pts`} />
       <DetailRow label="Confidence" value={formatConfidence(confidence)} />
       <DetailRow label="Job id" value={metadata?.jobId} />
       <DetailRow label="Response id" value={metadata?.responseId} />
+      <DetailRow label="Status URL" value={metadata?.statusUrl} />
       <DetailRow label="Source" value={metadata?.source === "mock" ? "Mock fallback" : metadata?.source || "API-ready"} />
       <DetailRow label="Error" value={error} />
     </dl>

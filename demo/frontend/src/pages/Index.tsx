@@ -72,7 +72,7 @@ const Index = () => {
               step={2}
               label="Item image"
               emptyTitle="Upload a garment or accessory"
-              hint="Drag and drop or click to select the garment, accessory, shoes, bag, watch, glasses, hat, or holdable item."
+              hint="Drag and drop or click to select a supported garment, accessory, shoe, bag, glasses, hat, tie, or belt."
               categoryHint="Category can be inferred automatically, or set manually below."
               file={demo.itemFile}
               previewUrl={demo.itemPreviewUrl}
@@ -130,6 +130,7 @@ const Index = () => {
               warnings={demo.warnings}
               error={demo.error}
               metadata={demo.metadata}
+              comparison={demo.comparison}
               canGenerate={demo.canGenerate}
               onGenerate={demo.generate}
               onDownload={demo.downloadSelectedResult}
