@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GACS Visual Slide Deck</title>
+  <style>
+    :root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #101827; background: #0f172a; }
+    body { margin: 0; background: #0f172a; }
+    .deck { display: grid; gap: 32px; padding: 32px; }
+    .slide { width: min(1280px, calc(100vw - 64px)); aspect-ratio: 16 / 9; margin: 0 auto; background: #f8fafc; border-radius: 22px; box-shadow: 0 20px 70px rgba(0,0,0,.35); overflow: hidden; position: relative; }
+    .cover { background: linear-gradient(135deg, #111827, #1e293b); color: white; padding: 76px; box-sizing: border-box; }
+    .cover h1 { font-size: 74px; line-height: .95; margin: 0 0 24px; max-width: 900px; }
+    .cover p { font-size: 28px; line-height: 1.4; color: #cbd5e1; max-width: 1000px; }
+    .badge-row { display: flex; gap: 14px; margin-top: 48px; flex-wrap: wrap; }
+    .badge { border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: white; padding: 12px 16px; border-radius: 999px; font-weight: 800; }
+    .diagram { width: 100%; height: 100%; object-fit: contain; background: #f8fafc; }
+    .slide-title { padding: 28px 38px 0; }
+    .slide-title span { color: #64748b; text-transform: uppercase; letter-spacing: .08em; font-size: 14px; font-weight: 900; }
+    .slide-title h2 { margin: 4px 0 18px; font-size: 38px; }
+    .case-img { display: block; width: calc(100% - 76px); margin: 0 auto; border-radius: 16px; border: 1px solid #cbd5e1; }
+    .note-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 18px 38px; }
+    .note-grid div { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; font-size: 18px; }
+    .note-grid strong { color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+    .script { padding: 54px 68px; box-sizing: border-box; }
+    .script h2 { font-size: 48px; margin: 0 0 24px; }
+    .script li { font-size: 27px; line-height: 1.42; margin: 15px 0; }
+    @media print { body { background: white; } .deck { padding: 0; gap: 0; } .slide { border-radius: 0; box-shadow: none; page-break-after: always; width: 100vw; } }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <section class="slide cover">
+      <h1>Geo-Affordance Candidate Selection</h1>
+      <p>Training-free improvement for small-object virtual try-on: explain the theory, show where it plugs into OmniTry, then prove it on small-object cases.</p>
+      <div class="badge-row">
+        <div class="badge">Small-object benchmark: 32 cases</div>
+        <div class="badge">Ring / bracelet / earrings</div>
+        <div class="badge">K=1 vs GACS K=2</div>
+      </div>
+    </section>
+    <section class="slide"><img class="diagram" src="presentation/diagrams/diagram_07_presentation_flow.svg" /></section>
+    <section class="slide"><img class="diagram" src="presentation/diagrams/diagram_01_omnitry_baseline.svg" /></section>
+    <section class="slide"><img class="diagram" src="presentation/diagrams/diagram_02_small_object_problem.svg" /></section>
+    <section class="slide"><img class="diagram" src="presentation/diagrams/diagram_03_gacs_end_to_end.svg" /></section>
+    <section class="slide"><img class="diagram" src="presentation/diagrams/diagram_04_integration_points.svg" /></section>
+    <section class="slide"><img class="diagram" src="presentation/diagrams/diagram_05_scoring_breakdown.svg" /></section>
+    <section class="slide"><img class="diagram" src="presentation/diagrams/diagram_06_small_object_benchmark.svg" /></section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 01 · Diverse visual check</span><h2>ring_woman_011_203</h2></div>
+      <img class="case-img" src="presentation/case_01_ring_woman_011_203.jpg" alt="ring_woman_011_203" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>ring</div>
+        <div><strong>K=1</strong><br>0.618754</div>
+        <div><strong>GACS K=2</strong><br>0.621918</div>
+        <div><strong>Delta</strong><br>+0.003164</div>
+      </div>
+    </section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 02 · Diverse visual check</span><h2>earrings_woman_004_103</h2></div>
+      <img class="case-img" src="presentation/case_02_earrings_woman_004_103.jpg" alt="earrings_woman_004_103" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>earrings</div>
+        <div><strong>K=1</strong><br>0.534739</div>
+        <div><strong>GACS K=2</strong><br>0.536624</div>
+        <div><strong>Delta</strong><br>+0.001885</div>
+      </div>
+    </section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 03 · Diverse visual check</span><h2>glasses_woman_010_301</h2></div>
+      <img class="case-img" src="presentation/case_03_glasses_woman_010_301.jpg" alt="glasses_woman_010_301" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>glasses</div>
+        <div><strong>K=1</strong><br>0.598226</div>
+        <div><strong>GACS K=2</strong><br>0.600092</div>
+        <div><strong>Delta</strong><br>+0.001866</div>
+      </div>
+    </section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 04 · Diverse visual check</span><h2>necklace_woman_012_101</h2></div>
+      <img class="case-img" src="presentation/case_04_necklace_woman_012_101.jpg" alt="necklace_woman_012_101" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>necklace</div>
+        <div><strong>K=1</strong><br>0.526438</div>
+        <div><strong>GACS K=2</strong><br>0.528071</div>
+        <div><strong>Delta</strong><br>+0.001633</div>
+      </div>
+    </section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 05 · Diverse visual check</span><h2>bracelet_woman_008_102</h2></div>
+      <img class="case-img" src="presentation/case_05_bracelet_woman_008_102.jpg" alt="bracelet_woman_008_102" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>bracelet</div>
+        <div><strong>K=1</strong><br>0.653525</div>
+        <div><strong>GACS K=2</strong><br>0.653801</div>
+        <div><strong>Delta</strong><br>+0.000276</div>
+      </div>
+    </section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 06 · Hard benchmark win</span><h2>ring_woman_015_204</h2></div>
+      <img class="case-img" src="presentation/case_06_ring_woman_015_204.jpg" alt="ring_woman_015_204" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>ring</div>
+        <div><strong>K=1</strong><br>0.641162</div>
+        <div><strong>GACS K=2</strong><br>0.644585</div>
+        <div><strong>Delta</strong><br>+0.003423</div>
+      </div>
+    </section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 07 · Hard benchmark win</span><h2>bracelet_woman_008_302</h2></div>
+      <img class="case-img" src="presentation/case_07_bracelet_woman_008_302.jpg" alt="bracelet_woman_008_302" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>bracelet</div>
+        <div><strong>K=1</strong><br>0.670664</div>
+        <div><strong>GACS K=2</strong><br>0.673440</div>
+        <div><strong>Delta</strong><br>+0.002776</div>
+      </div>
+    </section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 08 · Hard benchmark win</span><h2>ring_woman_015_102</h2></div>
+      <img class="case-img" src="presentation/case_08_ring_woman_015_102.jpg" alt="ring_woman_015_102" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>ring</div>
+        <div><strong>K=1</strong><br>0.524317</div>
+        <div><strong>GACS K=2</strong><br>0.526425</div>
+        <div><strong>Delta</strong><br>+0.002108</div>
+      </div>
+    </section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 09 · Hard benchmark win</span><h2>ring_woman_015_201</h2></div>
+      <img class="case-img" src="presentation/case_09_ring_woman_015_201.jpg" alt="ring_woman_015_201" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>ring</div>
+        <div><strong>K=1</strong><br>0.543893</div>
+        <div><strong>GACS K=2</strong><br>0.545963</div>
+        <div><strong>Delta</strong><br>+0.002070</div>
+      </div>
+    </section>
+    
+    <section class="slide case-slide">
+      <div class="slide-title"><span>Case 10 · Hard benchmark win</span><h2>bracelet_woman_008_103</h2></div>
+      <img class="case-img" src="presentation/case_10_bracelet_woman_008_103.jpg" alt="bracelet_woman_008_103" />
+      <div class="note-grid">
+        <div><strong>Class</strong><br>bracelet</div>
+        <div><strong>K=1</strong><br>0.640495</div>
+        <div><strong>GACS K=2</strong><br>0.642406</div>
+        <div><strong>Delta</strong><br>+0.001911</div>
+      </div>
+    </section>
+    
+    <section class="slide script">
+      <h2>Closing</h2>
+      <ul>
+        <li>GACS targets geometry ambiguity, not model capacity.</li>
+        <li>It changes prompt, sampling, and selection; model weights stay frozen.</li>
+        <li>Main quantitative claim is small-object-only, not the broad 360-case run.</li>
+        <li>Next: better affordance boxes with pose/hand keypoints and human preference study.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

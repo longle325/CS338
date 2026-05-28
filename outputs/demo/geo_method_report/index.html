@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geo-Affordance Method Demo</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --ink: #111827;
+      --muted: #4b5563;
+      --line: #d1d5db;
+      --blue: #2563eb;
+      --teal: #0f766e;
+      --amber: #b45309;
+      --red: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    header {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) minmax(520px, .85fr);
+      gap: 24px;
+      align-items: end;
+      padding: 22px 26px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    h1 { margin: 0 0 6px; font-size: clamp(25px, 3vw, 38px); line-height: 1.08; }
+    .subline { margin: 0; color: var(--muted); font-size: 15px; max-width: 900px; }
+    .score-grid { display: grid; grid-template-columns: repeat(4, minmax(118px, 1fr)); gap: 8px; }
+    .score-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 12px;
+    }
+    .score-card span { display: block; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    .score-card strong { display: block; margin-top: 4px; font-size: 19px; overflow-wrap: anywhere; }
+    main { display: grid; grid-template-columns: 310px minmax(0, 1fr); min-height: calc(100vh - 112px); }
+    aside { background: #fff; border-right: 1px solid var(--line); padding: 14px; overflow: auto; }
+    button.case {
+      width: 100%;
+      min-height: 76px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      text-align: left;
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      color: var(--ink);
+    }
+    button.case.active { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(15,118,110,.14); }
+    button.case strong { display: block; font-size: 14px; overflow-wrap: anywhere; }
+    button.case span { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .workspace { padding: 18px 22px 28px; overflow: auto; }
+    .compare { display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 12px; }
+    figure { margin: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); overflow: hidden; }
+    figure img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; background: #fafafa; display: block; }
+    figcaption { border-top: 1px solid var(--line); padding: 10px 11px; font-size: 13px; font-weight: 800; }
+    .details { display: grid; grid-template-columns: 1.2fr .8fr; gap: 14px; margin-top: 14px; align-items: start; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 14px; }
+    .panel h2 { margin: 0 0 10px; font-size: 18px; }
+    .note { color: var(--muted); line-height: 1.5; font-size: 14px; margin: 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 9px 8px; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    .pre { color: var(--blue); font-weight: 800; }
+    .geo { color: var(--teal); font-weight: 800; }
+    .pos { color: var(--teal); font-weight: 800; }
+    .neg { color: var(--red); font-weight: 800; }
+    @media (max-width: 1180px) {
+      header { grid-template-columns: 1fr; }
+      main { grid-template-columns: 1fr; }
+      aside { display: grid; grid-auto-flow: column; grid-auto-columns: 255px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      button.case { margin-right: 8px; margin-bottom: 0; }
+      .compare { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+      .details { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 680px) {
+      header { padding: 18px 16px 14px; }
+      .score-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .workspace { padding: 14px; }
+      .compare { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Geo-Affordance Candidate Selection</h1>
+      <p class="subline">Pretrained OmniTry compared against the same pretrained model with geometry-aware prompting and best-of-two candidate selection.</p>
+    </div>
+    <section class="score-grid" id="scoreGrid"></section>
+  </header>
+  <main>
+    <aside id="caseList"></aside>
+    <section class="workspace">
+      <div class="compare" id="compare"></div>
+      <div class="details">
+        <section class="panel">
+          <h2>Case Metrics</h2>
+          <table id="caseTable"></table>
+        </section>
+        <section class="panel">
+          <h2>Benchmark</h2>
+          <p class="note" id="benchmarkNote"></p>
+        </section>
+      </div>
+      <section class="panel" style="margin-top:14px">
+        <h2>Class Breakdown</h2>
+        <table id="classTable"></table>
+      </section>
+    </section>
+  </main>
+  <script>
+    const data = {
+  "cases": [
+    {
+      "id": "ring_woman_011_203",
+      "group": "diverse_demo",
+      "category": "ring",
+      "person_id": "011",
+      "object_id": "203",
+      "object_caption": "Gold cross ring with small diamonds, elegant design.",
+      "pretrained": {
+        "total": 0.618754,
+        "object": 0.289349,
+        "person": 0.970915,
+        "artifact": 0.592205
+      },
+      "geo": {
+        "total": 0.621918,
+        "object": 0.289229,
+        "person": 0.976162,
+        "artifact": 0.596771
+      },
+      "delta_total": 0.0031639999999999446,
+      "delta_object": -0.00012000000000000899,
+      "delta_person": 0.005247000000000002,
+      "delta_artifact": 0.00456600000000007,
+      "assets": {
+        "person": "assets/ring_woman_011_203/person.jpg",
+        "object": "assets/ring_woman_011_203/object.jpg",
+        "pretrained": "assets/ring_woman_011_203/pretrained.jpg",
+        "geo": "assets/ring_woman_011_203/pretrained_geo.jpg"
+      }
+    },
+    {
+      "id": "earrings_woman_004_103",
+      "group": "diverse_demo",
+      "category": "earrings",
+      "person_id": "004",
+      "object_id": "103",
+      "object_caption": "Pearl and crystal CC logo drop earrings.",
+      "pretrained": {
+        "total": 0.534739,
+        "object": 0.084826,
+        "person": 0.970309,
+        "artifact": 0.551473
+      },
+      "geo": {
+        "total": 0.536624,
+        "object": 0.084371,
+        "person": 0.975713,
+        "artifact": 0.55198
+      },
+      "delta_total": 0.0018850000000000255,
+      "delta_object": -0.0004549999999999971,
+      "delta_person": 0.005404000000000075,
+      "delta_artifact": 0.0005070000000000352,
+      "assets": {
+        "person": "assets/earrings_woman_004_103/person.jpg",
+        "object": "assets/earrings_woman_004_103/object.jpg",
+        "pretrained": "assets/earrings_woman_004_103/pretrained.jpg",
+        "geo": "assets/earrings_woman_004_103/pretrained_geo.jpg"
+      }
+    },
+    {
+      "id": "glasses_woman_010_301",
+      "group": "diverse_demo",
+      "category": "glasses",
+      "person_id": "010",
+      "object_id": "301",
+      "object_caption": "Gold-rimmed, round glasses with thin metal frames.",
+      "pretrained": {
+        "total": 0.598226,
+        "object": 0.17575,
+        "person": 0.98237,
+        "artifact": 0.642947
+      },
+      "geo": {
+        "total": 0.600092,
+        "object": 0.177676,
+        "person": 0.983715,
+        "artifact": 0.645352
+      },
+      "delta_total": 0.0018659999999999233,
+      "delta_object": 0.001926000000000011,
+      "delta_person": 0.0013450000000000406,
+      "delta_artifact": 0.0024049999999999905,
+      "assets": {
+        "person": "assets/glasses_woman_010_301/person.jpg",
+        "object": "assets/glasses_woman_010_301/object.jpg",
+        "pretrained": "assets/glasses_woman_010_301/pretrained.jpg",
+        "geo": "assets/glasses_woman_010_301/pretrained_geo.jpg"
+      }
+    },
+    {
+      "id": "necklace_woman_012_101",
+      "group": "diverse_demo",
+      "category": "necklace",
+      "person_id": "012",
+      "object_id": "101",
+      "object_caption": "Gold chain necklace with \"CD\" logo and small tag.",
+      "pretrained": {
+        "total": 0.526438,
+        "object": 0.011279,
+        "person": 0.984575,
+        "artifact": 0.592963
+      },
+      "geo": {
+        "total": 0.528071,
+        "object": 0.011605,
+        "person": 0.984787,
+        "artifact": 0.59778
+      },
+      "delta_total": 0.0016329999999999956,
+      "delta_object": 0.0003259999999999999,
+      "delta_person": 0.00021199999999998997,
+      "delta_artifact": 0.00481699999999996,
+      "assets": {
+        "person": "assets/necklace_woman_012_101/person.jpg",
+        "object": "assets/necklace_woman_012_101/object.jpg",
+        "pretrained": "assets/necklace_woman_012_101/pretrained.jpg",
+        "geo": "assets/necklace_woman_012_101/pretrained_geo.jpg"
+      }
+    },
+    {
+      "id": "bracelet_woman_008_102",
+      "group": "diverse_demo",
+      "category": "bracelet",
+      "person_id": "008",
+      "object_id": "102",
+      "object_caption": "Gold chain bracelet with MK logo and crystal accents.",
+      "pretrained": {
+        "total": 0.653525,
+        "object": 0.263422,
+        "person": 0.96853,
+        "artifact": 0.74114
+      },
+      "geo": {
+        "total": 0.653801,
+        "object": 0.264208,
+        "person": 0.964783,
+        "artifact": 0.745515
+      },
+      "delta_total": 0.00027599999999994296,
+      "delta_object": 0.0007860000000000089,
+      "delta_person": -0.003747000000000056,
+      "delta_artifact": 0.004375000000000018,
+      "assets": {
+        "person": "assets/bracelet_woman_008_102/person.jpg",
+        "object": "assets/bracelet_woman_008_102/object.jpg",
+        "pretrained": "assets/bracelet_woman_008_102/pretrained.jpg",
+        "geo": "assets/bracelet_woman_008_102/pretrained_geo.jpg"
+      }
+    },
+    {
+      "id": "ring_woman_015_204",
+      "group": "hard_benchmark_win",
+      "category": "ring",
+      "person_id": "015",
+      "object_id": "204",
+      "object_caption": "Triple-layered gold, silver, and rose gold band.",
+      "pretrained": {
+        "total": 0.641162,
+        "object": 0.391201,
+        "person": 0.97534,
+        "artifact": 0.542909
+      },
+      "geo": {
+        "total": 0.644585,
+        "object": 0.393269,
+        "person": 0.980459,
+        "artifact": 0.545934
+      },
+      "delta_total": 0.003422999999999954,
+      "delta_object": 0.0020679999999999588,
+      "delta_person": 0.005118999999999985,
+      "delta_artifact": 0.0030250000000000554,
+      "assets": {
+        "person": "assets/ring_woman_015_204/person.jpg",
+        "object": "assets/ring_woman_015_204/object.jpg",
+        "pretrained": "assets/ring_woman_015_204/pretrained.jpg",
+        "geo": "assets/ring_woman_015_204/pretrained_geo.jpg"
+      }
+    },
+    {
+      "id": "bracelet_woman_008_302",
+      "group": "hard_benchmark_win",
+      "category": "bracelet",
+      "person_id": "008",
+      "object_id": "302",
+      "object_caption": "Elegant leaf-shaped diamond bracelet on wrist.",
+      "pretrained": {
+        "total": 0.670664,
+        "object": 0.310523,
+        "person": 0.969938,
+        "artifact": 0.741677
+      },
+      "geo": {
+        "total": 0.67344,
+        "object": 0.314946,
+        "person": 0.972146,
+        "artifact": 0.743193
+      },
+      "delta_total": 0.0027760000000000007,
+      "delta_object": 0.00442300000000001,
+      "delta_person": 0.0022079999999999878,
+      "delta_artifact": 0.0015159999999999618,
+      "assets": {
+        "person": "assets/bracelet_woman_008_302/person.jpg",
+        "object": "assets/bracelet_woman_008_302/object.jpg",
+        "pretrained": "assets/bracelet_woman_008_302/pretrained.jpg",
+        "geo": "assets/bracelet_woman_008_302/pretrained_geo.jpg"
+      }
+    },
+    {
+      "id": "ring_woman_015_102",
+      "group": "hard_benchmark_win",
+      "category": "ring",
+      "person_id": "015",
+      "object_id": "102",
+      "object_caption": "Gold ring with \"R\" and heart-shaped charm.",
+      "pretrained": {
+        "total": 0.524317,
+        "object": 0.047722,
+        "person": 0.981507,
+        "artifact": 0.546955
+      },
+      "geo": {
+        "total": 0.526425,
+        "object": 0.049594,
+        "person": 0.984496,
+        "artifact": 0.548314
+      },
+      "delta_total": 0.0021079999999999988,
+      "delta_object": 0.0018719999999999987,
+      "delta_person": 0.0029890000000000194,
+      "delta_artifact": 0.001358999999999999,
+      "assets": {
+        "person": "assets/ring_woman_015_102/person.jpg",
+        "object": "assets/ring_woman_015_102/object.jpg",
+        "pretrained": "assets/ring_woman_015_102/pretrained.jpg",
+        "geo": "assets/ring_woman_015_102/pretrained_geo.jpg"
+      }
+    },
+    {
+      "id": "ring_woman_015_201",
+      "group": "hard_benchmark_win",
+      "category": "ring",
+      "person_id": "015",
+      "object_id": "201",
+      "object_caption": "Silver leaf-shaped ring with textured surface, displayed in black velvet box.",
+      "pretrained": {
+        "total": 0.543893,
+        "object": 0.104283,
+        "person": 0.981103,
+        "artifact": 0.546692
+      },
+      "geo": {
+        "total": 0.545963,
+        "object": 0.104519,
+        "person": 0.984779,
+        "artifact": 0.54903
+      },
+      "delta_total": 0.0020700000000000163,
+      "delta_object": 0.0002360000000000001,
+      "delta_person": 0.0036760000000000126,
+      "delta_artifact": 0.0023380000000000623,
+      "assets": {
+        "person": "assets/ring_woman_015_201/person.jpg",
+        "object": "assets/ring_woman_015_201/object.jpg",
+        "pretrained": "assets/ring_woman_015_201/pretrained.jpg",
+        "geo": "assets/ring_woman_015_201/pretrained_geo.jpg"
+      }
+    },
+    {
+      "id": "bracelet_woman_008_103",
+      "group": "hard_benchmark_win",
+      "category": "bracelet",
+      "person_id": "008",
+      "object_id": "103",
+      "object_caption": "Colorful beaded bracelet with silver accents, seven chakra design.",
+      "pretrained": {
+        "total": 0.640495,
+        "object": 0.222823,
+        "person": 0.975503,
+        "artifact": 0.736938
+      },
+      "geo": {
+        "total": 0.642406,
+        "object": 0.22354,
+        "person": 0.979179,
+        "artifact": 0.73818
+      },
+      "delta_total": 0.001910999999999996,
+      "delta_object": 0.0007169999999999954,
+      "delta_person": 0.0036760000000000126,
+      "delta_artifact": 0.0012419999999999654,
+      "assets": {
+        "person": "assets/bracelet_woman_008_103/person.jpg",
+        "object": "assets/bracelet_woman_008_103/object.jpg",
+        "pretrained": "assets/bracelet_woman_008_103/pretrained.jpg",
+        "geo": "assets/bracelet_woman_008_103/pretrained_geo.jpg"
+      }
+    }
+  ],
+  "metrics": {
+    "hard": {
+      "items": 32,
+      "pretrained": {
+        "items": 32,
+        "total_mean": 0.623209,
+        "object_mean": 0.25547,
+        "person_mean": 0.976477,
+        "artifact_mean": 0.640091,
+        "classes": {
+          "bracelet": {
+            "count": 15,
+            "total_mean": 0.651278,
+            "object_mean": 0.253763,
+            "person_mean": 0.971293,
+            "artifact_mean": 0.741696
+          },
+          "earrings": {
+            "count": 1,
+            "total_mean": 0.536287,
+            "object_mean": 0.084962,
+            "person_mean": 0.973365,
+            "artifact_mean": 0.55291
+          },
+          "ring": {
+            "count": 16,
+            "total_mean": 0.602326,
+            "object_mean": 0.267726,
+            "person_mean": 0.981531,
+            "artifact_mean": 0.550285
+          }
+        }
+      },
+      "geo": {
+        "items": 32,
+        "total_mean": 0.62376,
+        "object_mean": 0.255866,
+        "person_mean": 0.977028,
+        "artifact_mean": 0.640823,
+        "classes": {
+          "bracelet": {
+            "count": 15,
+            "total_mean": 0.651681,
+            "object_mean": 0.254082,
+            "person_mean": 0.971568,
+            "artifact_mean": 0.742344
+          },
+          "earrings": {
+            "count": 1,
+            "total_mean": 0.536287,
+            "object_mean": 0.084962,
+            "person_mean": 0.973365,
+            "artifact_mean": 0.55291
+          },
+          "ring": {
+            "count": 16,
+            "total_mean": 0.603051,
+            "object_mean": 0.26822,
+            "person_mean": 0.982376,
+            "artifact_mean": 0.551141
+          }
+        }
+      },
+      "delta": {
+        "total_mean": 0.0005509999999999682,
+        "object_mean": 0.00039600000000000746,
+        "person_mean": 0.0005509999999999682,
+        "artifact_mean": 0.0007320000000000659
+      },
+      "wins": 17,
+      "ties": 14,
+      "losses": 1,
+      "top_wins": [
+        {
+          "id": "ring_woman_015_204",
+          "category": "ring",
+          "pretrained_total": 0.641162,
+          "geo_total": 0.644585,
+          "delta_total": 0.003422999999999954,
+          "delta_object": 0.0020679999999999588,
+          "delta_person": 0.005118999999999985,
+          "delta_artifact": 0.0030250000000000554
+        },
+        {
+          "id": "bracelet_woman_008_302",
+          "category": "bracelet",
+          "pretrained_total": 0.670664,
+          "geo_total": 0.67344,
+          "delta_total": 0.0027760000000000007,
+          "delta_object": 0.00442300000000001,
+          "delta_person": 0.0022079999999999878,
+          "delta_artifact": 0.0015159999999999618
+        },
+        {
+          "id": "ring_woman_015_102",
+          "category": "ring",
+          "pretrained_total": 0.524317,
+          "geo_total": 0.526425,
+          "delta_total": 0.0021079999999999988,
+          "delta_object": 0.0018719999999999987,
+          "delta_person": 0.0029890000000000194,
+          "delta_artifact": 0.001358999999999999
+        },
+        {
+          "id": "ring_woman_015_201",
+          "category": "ring",
+          "pretrained_total": 0.543893,
+          "geo_total": 0.545963,
+          "delta_total": 0.0020700000000000163,
+          "delta_object": 0.0002360000000000001,
+          "delta_person": 0.0036760000000000126,
+          "delta_artifact": 0.0023380000000000623
+        },
+        {
+          "id": "bracelet_woman_008_103",
+          "category": "bracelet",
+          "pretrained_total": 0.640495,
+          "geo_total": 0.642406,
+          "delta_total": 0.001910999999999996,
+          "delta_object": 0.0007169999999999954,
+          "delta_person": 0.0036760000000000126,
+          "delta_artifact": 0.0012419999999999654
+        },
+        {
+          "id": "ring_woman_015_101",
+          "category": "ring",
+          "pretrained_total": 0.563115,
+          "geo_total": 0.564958,
+          "delta_total": 0.001842999999999928,
+          "delta_object": -0.0007439999999999947,
+          "delta_person": 0.003233999999999959,
+          "delta_artifact": 0.003238000000000074
+        },
+        {
+          "id": "ring_woman_015_105",
+          "category": "ring",
+          "pretrained_total": 0.583733,
+          "geo_total": 0.585166,
+          "delta_total": 0.0014330000000000176,
+          "delta_object": 0.0019169999999999743,
+          "delta_person": 0.0007389999999999342,
+          "delta_artifact": 0.0016819999999999613
+        },
+        {
+          "id": "bracelet_woman_008_202",
+          "category": "bracelet",
+          "pretrained_total": 0.652938,
+          "geo_total": 0.65355,
+          "delta_total": 0.0006119999999999459,
+          "delta_object": -0.003418000000000032,
+          "delta_person": 0.007688999999999946,
+          "delta_artifact": -0.0029450000000000864
+        },
+        {
+          "id": "bracelet_woman_008_305",
+          "category": "bracelet",
+          "pretrained_total": 0.69788,
+          "geo_total": 0.698316,
+          "delta_total": 0.00043600000000010297,
+          "delta_object": 0.005253000000000008,
+          "delta_person": -0.005400999999999989,
+          "delta_artifact": 0.001627000000000045
+        },
+        {
+          "id": "bracelet_woman_008_101",
+          "category": "bracelet",
+          "pretrained_total": 0.662074,
+          "geo_total": 0.662354,
+          "delta_total": 0.00027999999999994696,
+          "delta_object": 0.00042800000000003946,
+          "delta_person": -0.00017099999999992122,
+          "delta_artifact": 0.0006379999999999164
+        },
+        {
+          "id": "ring_woman_015_205",
+          "category": "ring",
+          "pretrained_total": 0.530564,
+          "geo_total": 0.530843,
+          "delta_total": 0.0002789999999999182,
+          "delta_object": -0.0007309999999999955,
+          "delta_person": -0.00030600000000002847,
+          "delta_artifact": 0.0021440000000000348
+        },
+        {
+          "id": "ring_woman_015_302",
+          "category": "ring",
+          "pretrained_total": 0.64869,
+          "geo_total": 0.648934,
+          "delta_total": 0.00024400000000002198,
+          "delta_object": -0.0005939999999999834,
+          "delta_person": -0.00011299999999991872,
+          "delta_artifact": 0.0016369999999999996
+        }
+      ],
+      "classes": [
+        {
+          "category": "bracelet",
+          "count": 15,
+          "pretrained_total": 0.651278,
+          "geo_total": 0.651681,
+          "delta_total": 0.0004029999999999312
+        },
+        {
+          "category": "earrings",
+          "count": 1,
+          "pretrained_total": 0.536287,
+          "geo_total": 0.536287,
+          "delta_total": 0.0
+        },
+        {
+          "category": "ring",
+          "count": 16,
+          "pretrained_total": 0.602326,
+          "geo_total": 0.603051,
+          "delta_total": 0.0007249999999999757
+        }
+      ]
+    },
+    "diverse": {
+      "items": 6,
+      "pretrained": {
+        "items": 6,
+        "total_mean": 0.583172,
+        "object_mean": 0.161676,
+        "person_mean": 0.966554,
+        "artifact_mean": 0.627637,
+        "classes": {
+          "bracelet": {
+            "count": 1,
+            "total_mean": 0.653525,
+            "object_mean": 0.263422,
+            "person_mean": 0.96853,
+            "artifact_mean": 0.74114
+          },
+          "earrings": {
+            "count": 1,
+            "total_mean": 0.534739,
+            "object_mean": 0.084826,
+            "person_mean": 0.970309,
+            "artifact_mean": 0.551473
+          },
+          "glasses": {
+            "count": 1,
+            "total_mean": 0.598226,
+            "object_mean": 0.17575,
+            "person_mean": 0.98237,
+            "artifact_mean": 0.642947
+          },
+          "necklace": {
+            "count": 1,
+            "total_mean": 0.526438,
+            "object_mean": 0.011279,
+            "person_mean": 0.984575,
+            "artifact_mean": 0.592963
+          },
+          "ring": {
+            "count": 1,
+            "total_mean": 0.618754,
+            "object_mean": 0.289349,
+            "person_mean": 0.970915,
+            "artifact_mean": 0.592205
+          },
+          "sunglasses": {
+            "count": 1,
+            "total_mean": 0.567349,
+            "object_mean": 0.145428,
+            "person_mean": 0.922628,
+            "artifact_mean": 0.645096
+          }
+        }
+      },
+      "geo": {
+        "items": 6,
+        "total_mean": 0.581209,
+        "object_mean": 0.162176,
+        "person_mean": 0.956754,
+        "artifact_mean": 0.631947,
+        "classes": {
+          "bracelet": {
+            "count": 1,
+            "total_mean": 0.653801,
+            "object_mean": 0.264208,
+            "person_mean": 0.964783,
+            "artifact_mean": 0.745515
+          },
+          "earrings": {
+            "count": 1,
+            "total_mean": 0.536624,
+            "object_mean": 0.084371,
+            "person_mean": 0.975713,
+            "artifact_mean": 0.55198
+          },
+          "glasses": {
+            "count": 1,
+            "total_mean": 0.600092,
+            "object_mean": 0.177676,
+            "person_mean": 0.983715,
+            "artifact_mean": 0.645352
+          },
+          "necklace": {
+            "count": 1,
+            "total_mean": 0.528071,
+            "object_mean": 0.011605,
+            "person_mean": 0.984787,
+            "artifact_mean": 0.59778
+          },
+          "ring": {
+            "count": 1,
+            "total_mean": 0.621918,
+            "object_mean": 0.289229,
+            "person_mean": 0.976162,
+            "artifact_mean": 0.596771
+          },
+          "sunglasses": {
+            "count": 1,
+            "total_mean": 0.546749,
+            "object_mean": 0.145964,
+            "person_mean": 0.855361,
+            "artifact_mean": 0.654282
+          }
+        }
+      },
+      "delta": {
+        "total_mean": -0.001963000000000048,
+        "object_mean": 0.0005000000000000004,
+        "person_mean": -0.009800000000000031,
+        "artifact_mean": 0.004310000000000036
+      },
+      "wins": 5,
+      "ties": 0,
+      "losses": 1,
+      "top_wins": [
+        {
+          "id": "ring_woman_011_203",
+          "category": "ring",
+          "pretrained_total": 0.618754,
+          "geo_total": 0.621918,
+          "delta_total": 0.0031639999999999446,
+          "delta_object": -0.00012000000000000899,
+          "delta_person": 0.005247000000000002,
+          "delta_artifact": 0.00456600000000007
+        },
+        {
+          "id": "earrings_woman_004_103",
+          "category": "earrings",
+          "pretrained_total": 0.534739,
+          "geo_total": 0.536624,
+          "delta_total": 0.0018850000000000255,
+          "delta_object": -0.0004549999999999971,
+          "delta_person": 0.005404000000000075,
+          "delta_artifact": 0.0005070000000000352
+        },
+        {
+          "id": "glasses_woman_010_301",
+          "category": "glasses",
+          "pretrained_total": 0.598226,
+          "geo_total": 0.600092,
+          "delta_total": 0.0018659999999999233,
+          "delta_object": 0.001926000000000011,
+          "delta_person": 0.0013450000000000406,
+          "delta_artifact": 0.0024049999999999905
+        },
+        {
+          "id": "necklace_woman_012_101",
+          "category": "necklace",
+          "pretrained_total": 0.526438,
+          "geo_total": 0.528071,
+          "delta_total": 0.0016329999999999956,
+          "delta_object": 0.0003259999999999999,
+          "delta_person": 0.00021199999999998997,
+          "delta_artifact": 0.00481699999999996
+        },
+        {
+          "id": "bracelet_woman_008_102",
+          "category": "bracelet",
+          "pretrained_total": 0.653525,
+          "geo_total": 0.653801,
+          "delta_total": 0.00027599999999994296,
+          "delta_object": 0.0007860000000000089,
+          "delta_person": -0.003747000000000056,
+          "delta_artifact": 0.004375000000000018
+        },
+        {
+          "id": "sunglasses_man_001_101",
+          "category": "sunglasses",
+          "pretrained_total": 0.567349,
+          "geo_total": 0.546749,
+          "delta_total": -0.02059999999999995,
+          "delta_object": 0.0005360000000000087,
+          "delta_person": -0.06726699999999997,
+          "delta_artifact": 0.009186000000000027
+        }
+      ]
+    },
+    "finetune": {
+      "summary": {
+        "items": 32,
+        "total_mean": 0.621025,
+        "object_mean": 0.252481,
+        "person_mean": 0.975014,
+        "artifact_mean": 0.638004,
+        "classes": {
+          "bracelet": {
+            "count": 15,
+            "total_mean": 0.65095,
+            "object_mean": 0.250474,
+            "person_mean": 0.972518,
+            "artifact_mean": 0.743011
+          },
+          "earrings": {
+            "count": 1,
+            "total_mean": 0.534207,
+            "object_mean": 0.08488,
+            "person_mean": 0.972509,
+            "artifact_mean": 0.547068
+          },
+          "ring": {
+            "count": 16,
+            "total_mean": 0.598396,
+            "object_mean": 0.264838,
+            "person_mean": 0.977511,
+            "artifact_mean": 0.545244
+          }
+        }
+      }
+    },
+    "crawl": {
+      "crawled": 38,
+      "llm_labels": 38,
+      "usable_labels": 10,
+      "pseudo_pairs": 3,
+      "merged_train_items": 324,
+      "label_cost_usd": 0.6660600000000001,
+      "label_budget_usd": 100.0
+    }
+  }
+};
+    const scoreGrid = document.getElementById("scoreGrid");
+    const caseList = document.getElementById("caseList");
+    const compare = document.getElementById("compare");
+    const caseTable = document.getElementById("caseTable");
+    const classTable = document.getElementById("classTable");
+    const benchmarkNote = document.getElementById("benchmarkNote");
+    const fmt = (value) => Number(value).toFixed(6);
+    const delta = (value) => `${value >= 0 ? "+" : ""}${fmt(value)}`;
+    const cls = (value) => value >= 0 ? "pos" : "neg";
+
+    function renderScores() {
+      const m = data.metrics.hard;
+      const cards = [
+        ["Pretrained", fmt(m.pretrained.total_mean), "pre"],
+        ["Pretrained + Geo", fmt(m.geo.total_mean), "geo"],
+        ["Delta", delta(m.delta.total_mean), cls(m.delta.total_mean)],
+        ["Win / Tie / Loss", `${m.wins}/${m.ties}/${m.losses}`, "geo"],
+      ];
+      scoreGrid.innerHTML = cards.map(([label, value, klass]) => `
+        <article class="score-card"><span>${label}</span><strong class="${klass}">${value}</strong></article>
+      `).join("");
+    }
+
+    function renderList(activeIndex) {
+      caseList.innerHTML = data.cases.map((item, index) => `
+        <button class="case ${index === activeIndex ? "active" : ""}" data-index="${index}">
+          <strong>${item.id}</strong>
+          <span>${item.category} | total ${delta(item.delta_total)}</span>
+        </button>
+      `).join("");
+      caseList.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => renderCase(Number(button.dataset.index)));
+      });
+    }
+
+    function renderCase(index) {
+      const item = data.cases[index];
+      renderList(index);
+      compare.innerHTML = [
+        ["Person input", item.assets.person],
+        ["Object reference", item.assets.object],
+        ["Pretrained", item.assets.pretrained],
+        ["Pretrained + Geo", item.assets.geo],
+      ].map(([label, src]) => `
+        <figure><img src="${src}" alt="${label}"><figcaption>${label}</figcaption></figure>
+      `).join("");
+      caseTable.innerHTML = `
+        <tr><th>Metric</th><th>Pretrained</th><th>Pretrained + Geo</th><th>Delta</th></tr>
+        <tr><td>Total</td><td class="pre">${fmt(item.pretrained.total)}</td><td class="geo">${fmt(item.geo.total)}</td><td class="${cls(item.delta_total)}">${delta(item.delta_total)}</td></tr>
+        <tr><td>Object</td><td>${fmt(item.pretrained.object)}</td><td>${fmt(item.geo.object)}</td><td class="${cls(item.delta_object)}">${delta(item.delta_object)}</td></tr>
+        <tr><td>Person</td><td>${fmt(item.pretrained.person)}</td><td>${fmt(item.geo.person)}</td><td class="${cls(item.delta_person)}">${delta(item.delta_person)}</td></tr>
+        <tr><td>Artifact</td><td>${fmt(item.pretrained.artifact)}</td><td>${fmt(item.geo.artifact)}</td><td class="${cls(item.delta_artifact)}">${delta(item.delta_artifact)}</td></tr>
+      `;
+    }
+
+    function renderBenchmark() {
+      const hard = data.metrics.hard;
+      benchmarkNote.textContent = `Hard benchmark: ${hard.items} items, ${hard.wins} wins, ${hard.ties} ties, ${hard.losses} losses. Diverse demo: ${data.metrics.diverse.wins}/${data.metrics.diverse.items} cases improve under geometry, with sunglasses kept as the main failure case in the notes.`;
+      classTable.innerHTML = `
+        <tr><th>Class</th><th>Count</th><th>Pretrained</th><th>Pretrained + Geo</th><th>Delta</th></tr>
+        ${hard.classes.map((row) => `
+          <tr>
+            <td>${row.category}</td>
+            <td>${row.count}</td>
+            <td>${fmt(row.pretrained_total)}</td>
+            <td>${fmt(row.geo_total)}</td>
+            <td class="${cls(row.delta_total)}">${delta(row.delta_total)}</td>
+          </tr>
+        `).join("")}
+      `;
+    }
+
+    renderScores();
+    renderBenchmark();
+    renderCase(0);
+  </script>
+</body>
+</html>

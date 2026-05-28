@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GACS Small-Object Presentation</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: #f6f7f9; color: #111827; }
+    main { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+    .hero { background: #111827; color: white; padding: 36px; border-radius: 18px; margin-bottom: 24px; }
+    .hero h1 { margin: 0 0 12px; font-size: clamp(32px, 5vw, 58px); line-height: 1; }
+    .hero p { max-width: 940px; color: #d1d5db; font-size: 18px; line-height: 1.6; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 22px 0; }
+    .metric { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px; }
+    .metric strong { display: block; font-size: 26px; margin-bottom: 4px; }
+    .section { background: white; border: 1px solid #e5e7eb; border-radius: 18px; padding: 28px; margin: 20px 0; }
+    .section h2 { margin-top: 0; }
+    .case-card { background: white; border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; margin: 24px 0; box-shadow: 0 10px 28px rgba(15,23,42,.05); }
+    .case-head { display: flex; justify-content: space-between; gap: 18px; align-items: start; margin-bottom: 16px; }
+    .eyebrow { color: #64748b; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    h2 { margin: 4px 0 0; font-size: 28px; }
+    .pill { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 999px; padding: 8px 12px; font-weight: 700; white-space: nowrap; }
+    img { width: 100%; height: auto; border-radius: 14px; border: 1px solid #e5e7eb; background: white; }
+    p, li { line-height: 1.65; }
+    code { background: #f1f5f9; padding: 2px 5px; border-radius: 6px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } .case-head { flex-direction: column; } }
+    @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <h1>GACS for Small-Object Try-On</h1>
+    <p>Presentation framing: theory recap -> end-to-end integrated method -> how the improvement changes generation -> small-object-only benchmark -> 10 visual cases.</p>
+  </section>
+
+  <section class="grid">
+    <div class="metric"><strong>32</strong>small-object cases</div>
+    <div class="metric"><strong>0.623209</strong>K=1 total</div>
+    <div class="metric"><strong>0.623760</strong>GACS K=2 total</div>
+    <div class="metric"><strong>17 / 14 / 1</strong>wins / ties / losses</div>
+  </section>
+
+  <section class="section">
+    <h2>Visual Deck</h2>
+    <p><a href="presentation_visual_deck.html">Open the slide-style visual deck</a>. The diagrams are also available under <code>presentation/diagrams/</code>.</p>
+  </section>
+
+  <section class="section">
+    <h2>Use This Framing</h2>
+    <p>Do not use the 360-case run as the main small-object claim. It includes clothing and larger accessories. The quantitative claim should be the 32-case hard small-object set: ring, bracelet, and earrings. The 10 visual cases broaden the explanation to glasses and necklace.</p>
+  </section>
+
+  <section class="section">
+    <h2>End-to-End Method</h2>
+    <p>Input person image, object image, and object class. Normalize and build the OmniTry conditioning. Add class-specific affordance prompt. Generate K candidates with the frozen pretrained model. Score each candidate with object consistency, person preservation, and artifact health. Select the best candidate and save diagnostics.</p>
+  </section>
+
+  
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 01 · Diverse visual</span><h2>ring_woman_011_203</h2></div>
+        <div class="pill">ring · Δ +0.003164</div>
+      </div>
+      <img src="presentation/case_01_ring_woman_011_203.jpg" alt="ring_woman_011_203 four panel comparison" />
+      <p><strong>Talk track:</strong> Ở nhóm ring, vật phẩm chỉ chiếm một vùng rất nhỏ quanh ngón tay. Điểm cần nhìn là nhẫn có nằm đúng vùng tay không, có giữ được chi tiết kim loại/shape không, và bàn tay có bị phá không. Total score: K=1 0.618754 -> GACS K=2 0.621918.</p>
+    </section>
+    
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 02 · Diverse visual</span><h2>earrings_woman_004_103</h2></div>
+        <div class="pill">earrings · Δ +0.001885</div>
+      </div>
+      <img src="presentation/case_02_earrings_woman_004_103.jpg" alt="earrings_woman_004_103 four panel comparison" />
+      <p><strong>Talk track:</strong> Earrings là ví dụ cực nhỏ: vật phẩm gần tai, tóc và mặt. Mục tiêu là thay đổi cục bộ quanh tai mà không làm khuôn mặt trôi đi. Total score: K=1 0.534739 -> GACS K=2 0.536624.</p>
+    </section>
+    
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 03 · Diverse visual</span><h2>glasses_woman_010_301</h2></div>
+        <div class="pill">glasses · Δ +0.001866</div>
+      </div>
+      <img src="presentation/case_03_glasses_woman_010_301.jpg" alt="glasses_woman_010_301 four panel comparison" />
+      <p><strong>Talk track:</strong> Glasses có affordance rất rõ: phải nằm qua vùng mắt và sống mũi. Đây là case dễ giải thích vì geometry constraint trực quan. Total score: K=1 0.598226 -> GACS K=2 0.600092.</p>
+    </section>
+    
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 04 · Diverse visual</span><h2>necklace_woman_012_101</h2></div>
+        <div class="pill">necklace · Δ +0.001633</div>
+      </div>
+      <img src="presentation/case_04_necklace_woman_012_101.jpg" alt="necklace_woman_012_101 four panel comparison" />
+      <p><strong>Talk track:</strong> Necklace nằm quanh cổ và sát đường cổ áo, dễ bị hòa vào texture trang phục. GACS giúp thu hẹp vùng tìm kiếm quanh cổ/ngực trên. Total score: K=1 0.526438 -> GACS K=2 0.528071.</p>
+    </section>
+    
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 05 · Diverse visual</span><h2>bracelet_woman_008_102</h2></div>
+        <div class="pill">bracelet · Δ +0.000276</div>
+      </div>
+      <img src="presentation/case_05_bracelet_woman_008_102.jpg" alt="bracelet_woman_008_102 four panel comparison" />
+      <p><strong>Talk track:</strong> Ở nhóm bracelet, vùng cổ tay dễ bị che bởi tay, hoa, hoặc nếp áo. Điểm cần nhìn là vòng có quấn đúng quanh cổ tay không và phần ngoài cổ tay có được giữ ổn định không. Total score: K=1 0.653525 -> GACS K=2 0.653801.</p>
+    </section>
+    
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 06 · Hard benchmark win</span><h2>ring_woman_015_204</h2></div>
+        <div class="pill">ring · Δ +0.003423</div>
+      </div>
+      <img src="presentation/case_06_ring_woman_015_204.jpg" alt="ring_woman_015_204 four panel comparison" />
+      <p><strong>Talk track:</strong> Ở nhóm ring, vật phẩm chỉ chiếm một vùng rất nhỏ quanh ngón tay. Điểm cần nhìn là nhẫn có nằm đúng vùng tay không, có giữ được chi tiết kim loại/shape không, và bàn tay có bị phá không. Total score: K=1 0.641162 -> GACS K=2 0.644585.</p>
+    </section>
+    
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 07 · Hard benchmark win</span><h2>bracelet_woman_008_302</h2></div>
+        <div class="pill">bracelet · Δ +0.002776</div>
+      </div>
+      <img src="presentation/case_07_bracelet_woman_008_302.jpg" alt="bracelet_woman_008_302 four panel comparison" />
+      <p><strong>Talk track:</strong> Ở nhóm bracelet, vùng cổ tay dễ bị che bởi tay, hoa, hoặc nếp áo. Điểm cần nhìn là vòng có quấn đúng quanh cổ tay không và phần ngoài cổ tay có được giữ ổn định không. Total score: K=1 0.670664 -> GACS K=2 0.673440.</p>
+    </section>
+    
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 08 · Hard benchmark win</span><h2>ring_woman_015_102</h2></div>
+        <div class="pill">ring · Δ +0.002108</div>
+      </div>
+      <img src="presentation/case_08_ring_woman_015_102.jpg" alt="ring_woman_015_102 four panel comparison" />
+      <p><strong>Talk track:</strong> Ở nhóm ring, vật phẩm chỉ chiếm một vùng rất nhỏ quanh ngón tay. Điểm cần nhìn là nhẫn có nằm đúng vùng tay không, có giữ được chi tiết kim loại/shape không, và bàn tay có bị phá không. Total score: K=1 0.524317 -> GACS K=2 0.526425.</p>
+    </section>
+    
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 09 · Hard benchmark win</span><h2>ring_woman_015_201</h2></div>
+        <div class="pill">ring · Δ +0.002070</div>
+      </div>
+      <img src="presentation/case_09_ring_woman_015_201.jpg" alt="ring_woman_015_201 four panel comparison" />
+      <p><strong>Talk track:</strong> Ở nhóm ring, vật phẩm chỉ chiếm một vùng rất nhỏ quanh ngón tay. Điểm cần nhìn là nhẫn có nằm đúng vùng tay không, có giữ được chi tiết kim loại/shape không, và bàn tay có bị phá không. Total score: K=1 0.543893 -> GACS K=2 0.545963.</p>
+    </section>
+    
+    <section class="case-card">
+      <div class="case-head">
+        <div><span class="eyebrow">Case 10 · Hard benchmark win</span><h2>bracelet_woman_008_103</h2></div>
+        <div class="pill">bracelet · Δ +0.001911</div>
+      </div>
+      <img src="presentation/case_10_bracelet_woman_008_103.jpg" alt="bracelet_woman_008_103 four panel comparison" />
+      <p><strong>Talk track:</strong> Ở nhóm bracelet, vùng cổ tay dễ bị che bởi tay, hoa, hoặc nếp áo. Điểm cần nhìn là vòng có quấn đúng quanh cổ tay không và phần ngoài cổ tay có được giữ ổn định không. Total score: K=1 0.640495 -> GACS K=2 0.642406.</p>
+    </section>
+    
+</main>
+</body>
+</html>
