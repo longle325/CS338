@@ -27,13 +27,11 @@ export const CandidateGallery = ({ candidates, selectedCandidateId, onSelect }: 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-foreground">Candidate gallery</h3>
-        <span className="text-xs text-muted-foreground">
-          {candidates.length} candidate{candidates.length > 1 ? "s" : ""} generated
-        </span>
+        <h3 className="text-sm font-semibold text-foreground">Pretrained vs geometry</h3>
+        <span className="text-xs text-muted-foreground">Left: pretrained, right: best geometry</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {candidates.map((candidate) => {
           const isSelected = candidate.id === selectedCandidateId;
           const title = candidate.label || `Candidate ${candidate.candidateIndex + 1}`;

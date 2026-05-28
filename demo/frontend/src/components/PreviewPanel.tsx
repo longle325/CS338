@@ -64,7 +64,6 @@ export const PreviewPanel = ({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight text-foreground">Preview workspace</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Person Image + Item Image + Prompt to Best result</p>
         </div>
         <Badge variant="secondary" className="w-fit rounded-md border border-primary/15 bg-primary/10 text-primary">
           OmniTry++ mask-free

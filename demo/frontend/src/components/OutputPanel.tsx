@@ -56,13 +56,13 @@ export const OutputPanel = ({
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-foreground">Output</h2>
           </div>
-        <TabsList className="grid h-auto w-full grid-cols-2 rounded-lg sm:w-auto">
-          <TabsTrigger value="result" className="px-2 text-xs sm:px-3">
-            Result
-          </TabsTrigger>
-          <TabsTrigger value="details" className="px-2 text-xs sm:px-3">
-            Details
-          </TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-2 rounded-lg sm:w-auto">
+            <TabsTrigger value="result" className="px-2 text-xs sm:px-3">
+              Result
+            </TabsTrigger>
+            <TabsTrigger value="details" className="px-2 text-xs sm:px-3">
+              Details
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -77,7 +77,7 @@ export const OutputPanel = ({
             onRetry={onGenerate}
             onDownload={onDownload}
           />
-          <ConfidencePanel confidence={confidence} warnings={warnings} />
+          <ConfidencePanel warnings={warnings} />
         </TabsContent>
 
         <TabsContent value="details" className="mt-4">
